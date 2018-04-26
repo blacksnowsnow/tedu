@@ -1,0 +1,1539 @@
+
+步骤一：构建Nginx服务器
+
+1）使用源码包安装nginx软件包
+[root@proxy ~]# yum –y install gcc pcre-devel openssl-devel        //安装依赖包
+[root@proxy ~]# useradd –s /sbin/nologin nginx
+[root@proxy ~]# tar  -xf   nginx-1.10.3.tar.gz
+[root@proxy ~]# cd  nginx-1.10.3
+[root@proxy nginx-1.10.3]# ./configure   \
+> --prefix=/usr/local/nginx   \                //指定安装路径
+> --user=nginx   \                            //指定用户
+> --group=nginx  \                            //指定组
+> --with-http_ssl_module                        //开启SSL加密功能
+  .. ..
+nginx path prefix: "/usr/local/nginx"
+  nginx binary file: "/usr/local/nginx/sbin/nginx"
+  nginx configuration prefix: "/usr/local/nginx/conf"
+  nginx configuration file: "/usr/local/nginx/conf/nginx.conf"
+  nginx pid file: "/usr/local/nginx/logs/nginx.pid"
+  nginx error log file: "/usr/local/nginx/logs/error.log"
+  nginx http access log file: "/usr/local/nginx/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+[root@proxy nginx-1.10.3]# make && make install    //编译并安装
+
+
+2）nginx命令的用法
+[root@proxy ~]# /usr/local/nginx/sbin/nginx                    //启动服务
+[root@proxy ~]# /usr/local/nginx/sbin/nginx -s stop            //关闭服务
+[root@proxy ~]# /usr/local/nginx/sbin/nginx -s reload        //重新加载配置文件
+[root@proxy ~]# /usr/local/nginx/sbin/nginx –V                //查看软件信息
+[root@proxy ~]# ln -s /usr/local/nginx/sbin/nginx /sbin/        //方便后期使用
+
+步骤二：升级Nginx服务器
+
+1）编译新版本nginx软件
+[root@proxy ~]# tar  -zxvf   nginx-1.12.2.tar.gz
+[root@proxy ~]# cd nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --prefix=/usr/local/nginx   \ 
+> --user=nginx   \ 
+> --group=nginx  \ 
+> --with-http_ssl_module
+[root@proxy nginx-1.12.2]# make      
+
+2) 备份老的nginx主程序，并使用编译好的新版本nginx替换老版本
+[root@proxy nginx-1.12.2]# mv /usr/local/nginx/sbin/nginx  \
+>/usr/local/nginx/sbin/nginxold
+[root@proxy nginx-1.12.2]# cp objs/nginx  /usr/local/nginx/sbin/    //拷贝新版本
+[root@proxy nginx-1.12.2]# make upgrade                            //升级
+
+[root@proxy ~]# /usr/local/nginx/sbin/nginx –v                    //查看版本
+
+
+ 
+步骤一：修改Nginx配置文件
+
+1）修改/usr/local/nginx/conf/nginx.conf
+全局配置（用户名，日志，进程）
+
+program  程序 【硬盘】
+poricess 进程 【内存】
+thread   线程 
+
+http{
+	server{
+		listen 80;
+		server_name localhost;
+		root html;
+	}
+}
+
+
+步骤一：修改Nginx配置文件
+
+1）修改/usr/local/nginx/conf/nginx.conf
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+        auth_basic "Input Password:";                        //认证提示符
+        auth_basic_user_file "/usr/local/nginx/pass";        //认证密码文件
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+  }
+
+
+2）生成密码文件，创建用户及密码
+使用htpasswd命令创建账户文件，需要确保系统中已经安装了httpd-tools。
+[root@proxy ~]# yum -y install  httpd-tools
+[root@proxy ~]# htpasswd -c /usr/local/nginx/pass   tom        //创建密码文件
+New password: 
+Re-type new password: 
+Adding password for user tom
+
+[root@proxy ~]# htpasswd (去掉c) /usr/local/nginx/pass   jerry    //追加用户，不使用-c选项
+New password: 
+Re-type new password: 
+Adding password for user jerry
+[root@proxy ~]# cat /usr/local/nginx/pass
+
+
+4.3 步骤
+SSL虚拟主机
+实现此案例需要按照如下步骤进行。
+步骤一：配置SSL虚拟主机
+1）生成私钥与证书
+[root@proxy ~]# cd /usr/local/nginx/conf
+[root@proxy ~]# openssl genrsa > cert.key                            //生成私钥
+[root@proxy ~]# openssl req -new -x509 -key cert.key > cert.pem      //生成证书
+2）修改Nginx配置文件，设置加密网站的虚拟主机
+[root@proxy ~]# vim  /usr/local/nginx/conf/nginx.conf
+… …    
+server {
+        listen       443 ssl;
+        server_name            www.cc.com;
+        ssl_certificate      cert.pem;
+        ssl_certificate_key  cert.key;
+        ssl_session_cache    shared:SSL:1m;
+        ssl_session_timeout  5m;
+        ssl_ciphers  HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers  on;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+    }
+
+
+########nginx 没网页文件打开页面配置
+server {
+        listen       80;
+        server_name  content.example.com;
+        location /  {
+           root   /content;
+            index   index.html index.htm;
+          autoindex on;
+            autoindex_exact_size off;
+            autoindex_localtime on;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header REMOTE-HOST $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+}
+
+########################################################################
+
+步骤一：安装软件
+
+1）使用yum安装基础依赖包
+[root@proxy ~]# yum -y install gcc openssl-devel pcre-devel zlib-devel
+2）源码安装Nginx
+[root@proxy ~]# useradd –s /sbin/nologin  nginx
+[root@proxy ~]# tar -zxvf nginx-1.12.2.tar.gz
+[root@proxy ~]# cd nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --prefix=/usr/local/nginx    \
+> --user=nginx   --group=nginx \
+> --with-http_ssl_module
+[root@proxy ~]# make && make install
+.. ..
+3）安装MariaDB
+Mariadb在新版RHEL7光盘中包含有该软件，配置yum源后可以直接使用yum安装：
+[root@proxy ~]# yum –y install   mariadb   mariadb-server   mariadb-devel
+
+4）php和php-fpm(该软件包在lGGnmp_soft中提供)
+[root@proxy ~]# yum –y  install  php   php-mysql   3306
+[root@proxy ~]# yum –y  localinstall php-fpm-5.4.16-42.el7.x86_64.rpm
+步骤二：启动服务
+
+1）启动Nginx服务
+这里需要注意的是，如果服务器上已经启动了其他监听80端口的服务软件（如httpd），则需要先关闭该服务，否则会出现冲突。
+[root@proxy ~]# systemctl stop httpd                //如果该服务存在则关闭该服务
+[root@proxy ~]# /usr/local/nginx/sbin/nginx             //启动Nginx服务
+[root@proxy ~]# netstat -utnlp | grep :80
+tcp    0    0 0.0.0.0:80        0.0.0.0:*        LISTEN        32428/nginx         
+2）启动MySQL服务
+[root@proxy ~]# systemctl start mariadb
+[root@proxy ~]# systemctl status mariadb
+[root@proxy ~]# systemctl enable mariadb
+
+3）启动PHP-FPM服务
+[root@proxy ~]# systemctl start php-fpm        9000
+[root@proxy ~]# systemctl status php-fpm
+[root@proxy ~]# systemctl enable php-fpm
+4）设置防火墙与SELinux
+[root@proxy ~]# firewall-cmd --set-default-zone=trusted
+[root@proxy ~]# setenforce 0
+
+
+步骤一：创建并修改php-fpm配置文件
+
+1）查看php-fpm配置文件
+[root@proxy etc]# vim /etc/php-fpm.d/www.conf
+[www]
+listen = 127.0.0.1:9000
+listen.allowed_clients = 127.0.0.1
+user = apache
+group = apache
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+2）确认php-fpm服务已经启动
+[root@proxy ~]# systemctl restart php-fpm
+[root@proxy ~]# systemctl status php-fpm
+步骤二：修改Nginx配置文件并启动服务
+
+步骤一：创建并修改php-fpm配置文件
+
+1）查看php-fpm配置文件
+[root@proxy etc]# vim /etc/php-fpm.d/www.conf
+[www]
+listen = 127.0.0.1:9000
+listen.allowed_clients = 127.0.0.1
+user = apache
+group = apache
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+2）确认php-fpm服务已经启动
+[root@proxy ~]# systemctl restart php-fpm
+[root@proxy ~]# systemctl status php-fpm
+步骤二：修改Nginx配置文件并启动服务
+
+#LNMP常见问题：
+#1.出现下载页面【没有动静分离】
+#2.An error occurrefd[日志Connection redused]
+#3.空白页（可能是php脚本错误）
+#tailf /usr/local/nginx/logs/error.log （nginx日志文件）
+#tailf /var/log/php-fpm/www-error.log (php-fpm日志文件)
+#systemctl restart php-fpm
+#什么是LNMP
+主流的企业网站平台之一
+-L：linux操作系统
+-N：Nginx网站服务软件
+-M：Mysql、Mariadb数据库
+-P：网站开发语言（PHP、Perl、Python）
+
+
+步骤一：修改配置文件(访问a.html重定向到b.html)
+
+1）修改Nginx服务配置：
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+rewrite /a.html  /b.html;            
+}
+}
+
+步骤二：访问a.html重定向到b.html（跳转地址栏）
+
+1）修改Nginx服务配置：
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+rewrite /a.html  /b.html  redirect;            
+}
+}
+
+步骤三：修改配置文件(访问192.168.4.5的请求重定向至www.tmooc.cn)
+
+1) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+rewrite ^/ http://www.tmooc.cn/;
+location / {
+    root   html;
+index  index.html index.htm;
+# rewrite /a.html  /b.html  redirect;
+}
+}
+
+步骤四：修改配置文件(访问192.168.4.5/下面子页面，重定向至www.tmooc.cn/下相同的页面)
+
+1) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+rewrite ^/(.*) http://www.tmooc.cn/$1;
+location / {
+    root   html;
+index  index.html index.htm;
+# rewrite /a.html  /b.html  redirect;
+}
+}
+
+
+步骤三：修改配置文件(实现curl和火狐访问相同链接返回的页面不同)
+1) 创建网页目录以及对应的页面文件：
+[root@proxy ~]# echo "I am Normal page" > /usr/local/nginx/html/test.html
+[root@proxy ~]# mkdir  -p  /usr/local/nginx/html/firefox/
+[root@proxy ~]# echo "firefox page" > /usr/local/nginx/html/firefox/test.html
+2) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+}
+if ($http_user_agent ~*（#加*不区分大小写） firefox) {            //识别客户端firefox浏览器
+rewrite ^(.*)$ /firefox/$1 break;
+}
+}
+
+选项：
+last		不再读其他rewrite
+break 	不再读其他语句，结束请求
+redirect	临时重定向
+permament 	永久重定向
+
+
+netstat 网络状态查看器（ss）
+-a 所有连接
+-t tcp连接
+-u udp连接
+-n 数字显示
+-平显示对应程序的名称
+
+##############################################################################
+
+使用Nginx实现Web反向代理功能，实现如下功能：
+后端Web服务器两台，可以使用httpd实现
+Nginx采用轮询的方式调用后端Web服务器
+两台Web服务器的权重要求设置为不同的值
+最大失败次数为1，失败超时时间为30秒
+
+
+
+步骤一：部署实施后端Web服务器
+
+1）部署后端Web1服务器
+后端Web服务器可以简单使用yum方式安装httpd实现Web服务，为了可以看出后端服务器的不同，可以将两台后端服务器的首页文档内容设置为不同的内容。
+[root@web1 ~]# yum  -y  install  httpd
+[root@web1 ~]# echo "192.168.2.100" > /var/www/html/index.html
+[root@web1 ~]# systemctl restart httpd
+[root@web1 ~]# firewall-cmd --set-default-zone=trusted
+
+2）部署后端Web2服务器
+[root@web2 ~]# yum  -y  install  httpd
+[root@web2 ~]# echo "192.168.2.200" > /var/www/html/index.html
+[root@web2 ~]# systemctl restart httpd
+[root@web2 ~]# firewall-cmd --set-default-zone=trusted
+
+
+步骤二：配置Nginx服务器，添加服务器池，实现反向代理功能
+1）修改/usr/local/nginx/conf/nginx.conf配置文件
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+http {
+.. ..
+upstream webserver {
+                server 192.168.2.100:80;
+                server 192.168.2.200:80;
+        }
+.. ..
+server {
+        listen        80;
+        server_name  www.tarena.com;
+            location / {
+            proxy_pass http://webserver;
+        }
+}
+
+
+步骤二：配置upstream服务器集群池属性
+1）设置失败次数，超时时间，权重
+weight可以设置后台服务器的权重，max_fails可以设置后台服务器的失败次数，fail_timeout可以设置后台服务器的失败超时时间。
+
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+http {
+.. ..
+upstream webserver {
+                server 192.168.2.100 weight=1 max_fails=1 fail_timeout=10;
+                server 192.168.2.200 weight=2 max_fails=2 fail_timeout=10;
+        }
+max_fails=允许失败的次数
+fail_timeout=失败后多少秒不连接
+weight=访问比例
+
+
+步骤三：配置upstream服务器集群的调度算法
+
+1）设置相同客户端访问相同Web服务器
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+http {
+.. ..
+upstream webserver {
+                 ip_hash;
+                server 192.168.2.100 weight=1 max_fails=2 fail_timeout=10;
+                server 192.168.2.200 weight=2 max_fails=2 fail_timeout=10;
+        }
+.. ..
+
+ip_hash;设置相同客户端访问相同Web服务器
+
+#######################################################################
+
+使用Nginx实现TCP/UDP调度器功能，实现如下功能：
+后端SSH服务器两台
+Nginx编译安装时需要使用--with-stream，开启ngx_stream_core_module模块
+Nginx采用轮询的方式调用后端SSH服务器
+2.2 方案
+实现此案例需要按照如下步骤进行。
+步骤一：部署支持4层TCP/UDP代理的Nginx服务器
+
+1）部署nginx服务器
+编译安装必须要使用--with-stream参数开启4层代理模块。
+[root@proxy ~]# yum –y install gcc pcre-devel openssl-devel        //安装依赖包
+[root@proxy ~]# tar  -xf   nginx-1.12.2.tar.gz
+[root@proxy ~]# cd  nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --with-http_ssl_module                        //开启SSL加密功能
+> --with-stream                                //开启4层反向代理功能
+
+
+步骤二：配置Nginx服务器，添加服务器池，实现TCP/UDP反向代理功能
+
+1）修改/usr/local/nginx/conf/nginx.conf配置文件
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+stream {
+            upstream backend {
+               server 192.168.2.100:22;            //后端SSH服务器的IP和端口
+               server 192.168.2.200:22;
+}
+            server {
+                listen 12345;                    //Nginx监听的端口
+                proxy_connect_timeout 1s;
+                proxy_timeout 3s;
+                 proxy_pass backend;
+             }
+}
+http {
+.. ..
+}
+
+2）重启nginx服务
+[root@proxy ~]# /usr/local/nginx/sbin/nginx –s reload
+
+3）客户端使用访问代理服务器测试轮询效果
+[root@client ~]# ssh 192.168.4.100 -p 12345            //使用该命令多次访问查看效果
+
+
+3 案例3：Nginx常见问题处理
+3.1 问题
+
+本案例要求对Nginx服务器进行适当优化，解决如下问题，以提升服务器的处理性能：
+不显示Nginx软件版本号
+如果客户端访问服务器提示“Too many open files”如何解决
+如何解决客户端访问头部信息过长的问题
+如何让客户端浏览器缓存数据
+如何自定义返回给客户端的404错误页面
+如何查看服务器状态信息
+开启gzip压缩功能，提高数据传输效率
+
+步骤二：屏蔽服务器版本号信息
+
+1）优化前客户端测试服务器版本号信息
+[root@client ~]# curl -I http://192.168.4.5
+HTTP/1.1 200 OK
+Server: nginx/1.12.2
+Date: Mon, 27 Nov 2017 15:29:39 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Sun, 19 Nov 2017 05:58:46 GMT
+Connection: keep-alive
+ETag: "5a111d96-264"
+Accept-Ranges: bytes
+
+2）修改Nginx配置文件，屏蔽版本信息
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+http {
+       server_tokens off;                    //不显示nginx版本号信息
+.. ..
+}
+[root@proxy ~]# nginx -s reload
+
+3）优化后客户端测试服务器版本号信息
+[root@client ~]# curl -I http://192.168.4.5
+HTTP/1.1 200 OK
+Server: nginx
+
+步骤三：优化Nginx并发量
+
+1）优化前使用ab高并发测试
+[root@proxy ~]# ab –n 2000 –c 2000 http://192.168.4.5/
+Benchmarking 192.168.4.5 (be patient)
+socket: Too many open files (24)                //提示打开文件数量过多
+2）修改Nginx配置文件，增加并发量
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+worker_processes  2;                    //与CPU核心数量一致
+events {
+worker_connections 65535;        //每个worker最大并发连接数
+use epoll;
+}
+.. ..
+[root@proxy ~]# nginx -s reload
+
+3）优化Linux内核参数（最大文件数量）
+[root@proxy ~]# ulimit –Hn 100000
+[root@proxy ~]# ulimit –Sn 100000
+[root@proxy ~]# vim /etc/security/limits.conf
+    .. ..(永久生效写进配置文件)
+*               soft    nofile            100000
+*               hard    nofile            100000
+4）优化后测试服务器并发量
+[root@proxy ~]# ab –n 2000 –c 2000 http://192.168.4.5/
+
+步骤七：如何查看服务器状态信息
+1）编译安装时使用--with-http_stub_status_module开启状态页面模块
+[root@proxy ~]# yum -y install gcc pcre-devel openssl-devel        //安装常见依赖包
+[root@proxy ~]# tar  -zxvf   nginx-1.12.2.tar.gz
+[root@proxy ~]# cd  nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --with-http_ssl_module                        //开启SSL加密功能
+> --with-stream                                //开启TCP/UDP代理模块
+> --with-http_stub_status_module                //开启status状态页面
+[root@proxy nginx-1.12.2]# make && make install    //编译并安装
+
+
+2）修改Nginx配置文件，定义状态页面
+[root@proxy ~]# cat /usr/local/nginx/conf/nginx.conf
+… …
+location /status {
+                stub_status on;
+		    allow --------//允许的ip		
+        }
+
+2）优化后，查看状态页面信息
+[root@proxy ~]# curl  http://192.168.4.5/status
+Active connections: 1 
+server accepts handled requests
+ 10 10 3 
+Reading: 0 Writing: 1 Waiting: 0
+Active connections：当前活动的连接数量。
+Accepts：已经接受客户端的连接总数量。
+Handled：已经处理客户端的连接总数量（一般与accepts一致，除非服务器限制了连接数量）。
+Requests：客户端发送的请求数量。
+Reading：当前服务器正在读取客户端请求头的数量。
+Writing：当前服务器正在写响应信息的数量。
+Waiting：当前多少客户端在等待服务器的响应。
+
+
+步骤八：对页面进行压缩处理
+1）修改Nginx配置文件
+[root@proxy ~]# cat /usr/local/nginx/conf/nginx.conf
+http {
+.. ..
+gzip on;                            //开启压缩
+gzip_min_length 1000;                //小文件不压缩
+gzip_comp_level 4;                //压缩比率
+gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+                                    //对特定文件压缩，类型参考mime.types
+.. ..
+}
+
+传统的网络架构
+
+数据能不存数据库就一定不要存数据库
+图片，视频，音频（硬盘）
+
+有些数据必须放数据库（文字，字符：metedata数据的数据）（强大的查询能力）
+
+1000w张（d：\pic）
+
+
+
+SQL数据库：mysql,oracle,sqlserver
+NOSQL数据库：memcached，redis，mongodb
+缓存数据库（重起数据丢失）
+
+
+########################################################
+
+
+使用1台RHEL7虚拟机作为memcached服务器（192.168.4.5）。
+在RHEL7系统光盘中包含有memcached，因此需要提前配置yum源，即可直接使用yum安装，客户端测试时需要提前安装telnet远程工具。
+验证时需要客户端主机安装telnet，远程memcached来验证服务器的功能：
+add name 0 180 10	//变量不存在则添加
+set name 0 180 10	//添加或替换变量
+replace name 0 180 10	//替换
+get name	//读取变量
+append name 0 180 10	//向变量中追加数据
+delete name	//删除变量
+stats	//查看状态
+flush_all	//清空所有
+提示：0表示不压缩，180为数据缓存时间，10为需要存储的数据字节数量。
+
+
+1）使用yum安装软件包memcached
+[root@proxy ~]# yum -y  install   memcached
+
+2）启动服务并查看网络连接状态验证是否开启成功：
+[root@proxy ~]# systemctl  start  memcached
+[root@proxy ~]# systemctl  status  memcached
+[root@proxy ~]# netstat  -anptu  |  grep memcached
+
+3)配置文件
+/usr/lib/systemd/system/memcachede.service 
+
+vim /etc/sysconfig/mencached
+
+步骤二：使用telnet访问memcached服务器
+1）使用yum安装telnet
+[root@proxy ~]# yum –y install telnet
+
+
+2)使用telnet连接服务器测试memcached服务器功能，包括增、删、改、查等操作。
+[root@proxy ~]# telnet  192.168.4.5  11211
+
+
+set fengjie 0 180 3    
+jpg
+STORED
+
+get fengjie
+设置key名称为fengjie
+0表示不压缩
+180秒后数据会自动删除
+存的内容是3个字符
+#set是存
+#get是查
+#STORED 是成功
+
+add myname 0 180 10            //新建，myname不存在则添加，存在则报错
+set myname 0 180 10            //添加或替换变量
+replace myname 0 180 10        //替换，如果myname不存在则报错
+
+append myname 0 180 10        //向变量中追加数据
+delete myname                    //删除变量
+
+stats                        //查看状态
+flush_all                        //清空所有
+
+
+
+步骤一：部署LNMP环境（如果环境中已经存在LNMP环境本步骤可以忽略）
+1）使用yum安装基础依赖包
+[root@proxy ~]# yum -y install gcc openssl-devel pcre-devel zlib-devel
+.. ..
+2）源码安装Nginx
+[root@proxy ~]# tar -zxvf nginx-1.12.2.tar.gz
+[root@proxy ~]# cd nginx-1.12.2
+[root@proxy nginx-1.12.2]#  ./configure   \
+> --with-http_ssl_module 
+[root@proxy nginx-1.12.2]# make && make install
+3）安装MariaDB数据库
+[root@proxy ~]# yum –y install  mariadb  mariadb-server  mariadb-devel
+4）安装PHP
+[root@proxy ~]# yum –y install  php  php-mysql
+[root@proxy ~]# yum –y localinstall  php-fpm-5.4.16-42.el7.x86_64.rpm
+5）为PHP添加memcache扩展
+[root@proxy ~]# yum –y install  php-pecl-memcache
+6）修改Nginx配置文件
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+location / {
+            root   html;
+            index  index.php  index.html   index.htm;
+        }
+ location  ~  \.php$  {
+            root           html;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+           # fastcgi_param   SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+3）启动PHP-FPM服务
+[root@proxy ~]# systemctl start php-fpm
+[root@proxy ~]# systemctl status php-fpm
+[root@proxy ~]# systemctl restart php-fpm
+
+#session存放地点路径
+vim /etc/php-fpm.d/www.conf(文件最后两行)
+
+4 案例4：PHP实现session共享
+4.1 问题
+
+沿用练习三，通过修改PHP-FPM配置文件，实现session会话共享，本案例需要在练习三的基础上实现：
+配置PHP使用memcached服务器共享Session信息
+客户端访问两台不同的后端Web服务器时，Session 信息一致
+4.2 方案
+
+在练习三拓扑的基础上，Nginx服务器除了承担调度器外，还需要担任memcached数据库的角色，并在两台后端LNMP服务器上实现PHP的session会话共享。拓扑结构如图-4所示。
+
+步骤二：在后端LNMP服务器上部署Session共享
+注意：这些操作在两台后端Web服务器上均需要执行，以下操作以Web1（192.168.2.100）服务器为例。
+1）修改PHP-FPM配置文件，并重启服务
+[root@web1 ~]# vim  /etc/php-fpm.d/www.conf            //修改该配置文件的两个参数
+修改前效果如下:
+php_value[session.save_handler] = files
+php_value[session.save_path] = /var/lib/php/session
+//原始文件，默认定义Sessoin会话信息本地计算机（默认在/var/lib/php/session）
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+修改后效果如下:
+php_value[session.save_handler] = memcache
+php_value[session.save_path] = "tcp://192.168.2.5:11211"
+//定义Session信息存储在公共的memcached服务器上，主机参数中为memcache（没有d）
+//通过path参数定义公共的memcached服务器在哪（服务器的IP和端口）
+
+[root@web1 session]# yum -y install php-pecl-memcache.x86_64
+[root@web1 ~]# systemctl  restart  php-fpm
+
+##########################################################################
+
+memcache可以存数据的数据库软件
+1.缓存数据库（数据会丢失，读写极快）
+2.简单（K=value）
+yum -y install memcached
+#vim /etc/sysconfig/memcached
+#systemctl start memcached
+
+#yum -y install telnet
+#telnent 192.168.4.5 11211
+set key 0 180 3 
+xxx
+get key
+append
+delete
+fulsh_all
+stats
+
+#lnmp动态网站环境
+#vim /usr/local/nginx/html/mem.php
+memcached_connect(ip,11211)
+set('key','value')
+$i=get(key)
+echo $i
+
+
+#yum -y install php-pecl-memcache
+firefox 192.168.4.5
+
+#######################################################################
+
+web:httpd,nginx,tengine
+	静态页面，动态（php，python,perl）
+
+nginx+php
+
+jdk:工具箱
+     jave解释器
+	打包 war，jar
+
+java【一套生态】类库
+java是一种跨平台的、面向对象的程序设计语言，java技术具有卓越的通用性、高校性、平台移植性 和安全性
+
+Java Servlet
+Servlet是Java扩展Web服务器功能的组件规范
+
+常见Servlet
+
+1.3 步骤
+
+实现此案例需要按照如下步骤进行。
+步骤一：部署Tomcat服务器软件(192.168.2.100/24)
+
+1）使用RPM安装JDK环境
+[root@web1 ~]# yum –y install  java-1.8.0-openjdk                //安装JDK
+[root@web1 ~]# yum –y install java-1.8.0-openjdk-headless        //安装JDK
+
+2）安装Tomcat
+[root@web1 ~]# tar -xzf  apache-tomcat-8.0.30.tar.gz
+[root@web1 ~]# mv apache-tomcat-8.0.30  /usr/local/tomcat
+[root@web1 ~]# ls /usr/local/tomcat
+bin/                                            //主程序目录
+lib/                                            //库文件目录
+logs/
+  
+                                        //日志目录  
+temp/
+ 
+                                        //临时目录
+work/                                        //自动编译目录jsp代码转换servlet
+conf/                                        //配置文件目录
+webapps/                                        //页面目录
+
+步骤二：修改Tomcat配置文件
+
+1）创建测试JSP页面
+[root@web1 ~]# vim  /usr/local/tomcat/webapps/ROOT/test.jsp
+<html>
+<body>
+<center>
+Now time is: <%=new java.util.Date()%>            //显示服务器当前时间
+</center>
+</body>
+</html>
+2）启动服务
+[root@web1 ~]# /usr/local/tomcat/bin/startup.sh
+
+
+步骤三：验证测试
+
+1）服务器验证端口信息
+[root@web1 ~]# netstat -nutlp |grep java        //查看java监听的端口
+tcp        0      0 :::8080              :::*                LISTEN      2778/java           
+tcp        0      0 ::ffff:127.0.0.1:8005     :::*         LISTEN       2778/java           
+如果8005起不来
+mv /dev/random /dev/random.bak
+ln -s /dev/urandom /dev/random
+
+2）客户端浏览测试页面
+[root@client ~]# firefox http://127.0.0.1:8080
+[root@client ~]# firefox http://127.0.0.1:8080/test.jsp
+
+2.1 问题
+
+使用www.aa.com域名访问的页面根路径为/usr/local/tomcat/aa/ROOT
+使用www.bb.com域名访问的页面根路径为/usr/local/tomcat/bb/base
+访问www.aa.com/test时，页面自动跳转到/var/www/html目录下的页面
+访问页面时支持SSL加密通讯
+私钥、证书存储路径为/usr/local/tomcat/conf/cert
+每个虚拟主机都拥有独立的访问日志文件
+配置tomcat集群环境
+2.2 方案
+
+修改server.xml配置文件，创建两个域名的虚拟主机，修改如下两个参数块：
+# cat /usr/local/tomcat/conf/server.xml
+
+<server>
+	<service>
+	<connector prot=8080 />
+	<engine defaulthost=localhost>
+	<host name=www.a.com></host>
+	<host name=www.b.com></host>
+	</engine>	
+	</service>
+</server>
+
+2.1 问题
+
+沿用练习二，使用Tomcat部署加密虚拟主机，实现以下要求：
+实现两个基于域名的虚拟主机，域名分别为：www.aa.com和 www.bb.com
+使用www.aa.com域名访问的页面根路径为/usr/local/tomcat/aa/ROOT
+使用www.bb.com域名访问的页面根路径为/usr/local/tomcat/bb/base
+访问www.aa.com/test时，页面自动跳转到/var/www/html目录下的页面
+访问页面时支持SSL加密通讯
+私钥、证书存储路径为/usr/local/tomcat/conf/cert
+每个虚拟主机都拥有独立的访问日志文件
+配置tomcat集群环境
+2.2 方案
+
+修改server.xml配置文件，创建两个域名的虚拟主机，修改如下两个参数块：
+# cat /usr/local/tomcat/conf/server.xml
+… …
+<Host name=www.aa.com appBase="aa" unpackWARS="true" autoDeploy="true">
+</Host>
+<Host name="www.bb.com" appBase="bb" unpackWARS="true" autoDeploy="true">
+</Host>
+
+
+步骤二：修改www.bb.com网站的首页目录为base
+
+1）使用docBase参数可以修改默认网站首页路径
+[root@web1 ~]# vim /usr/local/tomcat/conf/server.xml
+… …
+<Host name="www.aa.com" appBase="aa" unpackWARS="true" autoDeploy="true">
+</Host>
+<Host name="www.bb.com" appBase="bb" unpackWARS="true" autoDeploy="true">
+<Context path="" docBase="base" reloadable="true"/>
+</Host>
+
+步骤三：跳转
+
+1）当用户访问http://www.aa.com/test打开/var/www/html目录下的页面
+[root@web1 ~]# vim /usr/local/tomcat/conf/server.xml
+… …
+<Host name="www.aa.com" appBase="aa" unpackWARS="true" autoDeploy="true">
+<Context path="/test" docBase="/var/www/html/" />
+</Host>
+<Host name="www.bb.com" appBase="bb" unpackWARS="true" autoDeploy="true">
+<Context path="" docBase="base" />
+</Host>
+
+
+步骤四：配置Tomcat支持SSL加密网站
+
+1）创建加密用的私钥和证书文件
+[root@web1 ~]# keytool -genkeypair -alias tomcat -keyalg RSA -keystore /usr/local/tomcat/keystore                //提示输入密码为:123456
+//-genkeypair     生成密钥对
+//-alias tomcat     密钥别名
+//-keyalg RSA     定义密钥算法为RSA算法
+//-keystore         定义密钥文件存储在:/usr/local/tomcat/keystore
+
+2)再次修改server.xml配置文件，创建支持加密连接的Connector
+[root@web1 ~]# vim /usr/local/tomcat/conf/server.xml
+… …
+<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
+keystoreFile="/usr/local/tomcat/keystore" keystorePass="123456" clientAuth="false" sslProtocol="TLS" />
+//备注，默认这段Connector被注释掉了，打开注释，添加密钥信息即可
+
+
+步骤五：配置Tomcat日志
+
+1)为每个虚拟主机设置不同的日志文件
+[root@svr5 ~]# vim /usr/local/tomcat/conf/server.xml
+.. ..
+<Host name="www.aa.com" appBase="aa" unpackWARS="true" autoDeploy="true">
+<Context path="/test" docBase="/var/www/html/" />
+<Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+               prefix=" aa_access" suffix=".txt"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+</Host>
+<Host name="www.bb.com" appBase="bb" unpackWARS="true" autoDeploy="true">
+<Context path="" docBase="base" />
+<Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+               prefix=" bb_access" suffix=".txt"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+</Host>
+
+
+3）查看服务器日志文件
+[root@web1 ~]# ls /usr/local/tomcat/logs/
+
+
+3 案例3：使用Varnish加速Web
+
+图-2
+对于Web服务器的部署，此实验中仅需要安装nginx或者httpd软件、启动服务，并生成测试首页文件即可，默认httpd网站根 路径为/var/www/html，首页文档名称为index.html，默认nginx网站根路径为/usr/local/nginx/html，默认 首页为index.html。下面的实验我们以httpd为例作为Web服务器。
+3.3 步骤
+步骤二：部署Varnish缓存服务器(192.168.4.5)
+
+1）编译安装软件
+[root@proxy ~]# yum -y install gcc readline-devel    //安装软件依赖包
+[root@proxy ~]# yum -y install ncurses-devel         //安装软件依赖包
+[root@proxy ~]# yum -y install python-docutils         //安装软件依赖包
+[root@proxy ~]# yum -y install pcre-devel            //安装软件依赖包
+[root@proxy ~]# useradd -s /sbin/nologin varnish                //创建账户
+[root@proxy ~]# tar -xf varnish-5.2.1.tar.gz
+[root@proxy ~]# cd varnish-5.2.1
+[root@proxy varnish-5.2.1]# ./configure
+[root@proxy varnish-5.2.1]# make && make install
+
+
+2）复制启动脚本及配置文件
+[root@proxy varnish-5.2.1]# cp  etc/example.vcl   /usr/local/etc/default.vcl
+
+
+3）修改代理配置文件
+[root@proxy ~]# vim  /usr/local/etc/default.vcl
+backend default {
+     .host = "192.168.2.100";
+     .port = "80";
+ }
+
+4）启动服务
+ [root@proxy ~]# varnishd  -f /usr/local/etc/default.vcl
+//varnishd命令的其他选项说明如下：
+//varnishd –s malloc,128M        定义varnish使用内存作为缓存，空间为128M
+//varnishd –s file,/var/lib/varnish_storage.bin,1G 定义varnish使用文件作为缓存
+
+步骤四：其他操作
+
+1）查看varnish日志
+[root@proxy ~]#
+ 
+varnishlog                        //varnish日志
+[root@proxy ~]#
+ 
+varnishncsa                    //访问日志
+
+
+2）更新缓存数据，在后台web服务器更新页面内容后，用户访问代理服务器看到的还是之前的数据，说明缓存中的数据过期了需要更新（默认也会自动更新，但非实时更新）。
+[root@proxy ~]# varnishadm  ban.url 页面文件名
+//清空缓存数据，支持正则表达式
+
+
+###############################################################################
+版本控制（git、subversion）
+
+Subversion基本操作
+	-自由/开源的版本控制系统
+	-在svn管理下，文件和目录可以超越时空
+	-svn允许你数据恢复到早期版本
+	-或者是检查数据修改的历史
+	-许多人将版本控制系统当作一种神奇的“时间机器”
+	-允许你和别人协作文档并跟踪所做的修改
+
+客户端  -命令行
+       	-图形
+http://blog.chinaunix.net/uid-10224518-id-2980452.html
+通信方式
+	-本地访问
+	-svn服务器
+	-Web服务
+
+1.3 步骤
+
+实现此案例需要按照如下步骤进行。
+步骤一：安装Subversion服务器
+
+1）YUM安装subversion软件
+[root@web1 ~]# yum -y install subversion
+[root@web1 ~]# rpm -q subversion
+
+
+2)创建版本库
+[root@web1 ~]# mkdir /var/svn/ 
+[root@web1 ~]# svnadmin create /var/svn/project
+[root@web1 ~]# ls /var/svn/project/
+conf/  db/  format  hooks/  locks/  README.txt
+
+3）本地导入初始化数据
+[root@web1 ~]# cd /usr/lib/system/system/ 
+[root@web1 ~]# svn import . file:///var/svn/project/ -m "Init Data"
+
+
+[root@web1 ~]# vim /var/svn/project/conf/svnserve.conf(去掉注释)
+anon-access = none        //匿名无任何权限
+auth-access = write        //有效账户可写
+
+password-db = passwd    //密码文件
+
+authz-db = authz        //ACL访问控制列表文件
+
+[root@web1 ~]# vim /var/svn/project/conf/passwd 
+… …
+[users]
+harry = pass            //用户名和密码
+tom = pass            //用户名和密码
+
+[root@web1 ~]# cat /var/svn/project/conf/authz 
+[aliases]
+# joe = /C=XZ/ST=Dessert/L=Snake City/O=Snake Oil, Ltd./OU=Research Institute/CN=Joe Average
+[groups]
+harry_and_tom = harry,tom            //定义组账户，组成员为harry和tom
+[/]                                //定义ACL访问控制
+harry = rw                        //用户对项目根路径可读可写
+tom = rw
+* = r                            //其他人只读
+
+5）启动服务
+[root@web1 ~]# svnserve –d  -r /var/svn/project1
+[root@web1 ~]# netstat -nutlp |grep svnserve
+tcp        0      0 0.0.0.0:3690    0.0.0.0:*    LISTEN      4043/svnserve 
+
+
+systemctl start svnserver (共享所有目录) 不方便
+
+步骤二：客户端测试(192.168.2.200)
+
+1）将服务器上的代码下载到本地
+[root@web2 ~]# cd /tmp
+[root@web2 ~]# svn --username harry --password pass \
+co svn://192.168.2.100  code（下载目录）        //建立本地副本
+
+[root@web2 code]# vim user.slice                 //挑选任意文件修改其内容
+[root@web2 code]# svn ci –m "modify user"(注释：为什么修改)       //将本地修改的数据同步到服务器
+
+
+svn co 下载代码
+svn ci 提交代码
+svn update 更新代码
+svn info 查看版本库信息
+svn add  新建文件
+svn rm   删除文件
+svn mkdir 新建目录
+svn diff 
+
+
+
+[root@web2 code]# svn info     svn://192.168.2.100    //查看版本仓库基本信息
+[root@web2 code]# svn log     svn://192.168.2.100    //查看版本仓库的日志
+
+
+[root@web2 code]# echo "test" > test.sh        //本地新建一个文件
+[root@web2 code]# svn ci –m "new file"            //提交失败，该文件不被svn管理
+[root@web2 code]# svn add test.sh                //将文件或目录加入版本控制
+[root@web2 code]# svn ci –m "new file"            //再次提交，成功
+
+[root@web2 code]# svn mkdir subdir                //创建子目录
+[root@web2 code]# svn rm timers.target            //使用svn删除文件
+[root@web2 code]# svn ci –m "xxx"                //提交一次代码
+
+[root@web2 code]# svn diff umount.target        //仅查看某一个文件的差异
+
+[root@web2 code]# svn revert tmp.mount            //还原tmp.mount文件(本地修改没提交)
+
+[root@web2 code]# sed -i '1a ##test###' tuned.service    //修改本地副本中的代码文件
+[root@web2 code]# svn ci  -m  "xxx"                    //提交代码（上传了）
+[root@web2 code]# svn merge –r7:2    tuned.service    //将文件从版本7还原到版本2
+
+[root@web2 code]#svn update                    //还原（文件删除了还原）
+
+
+2.3 步骤
+
+实现此案例需要按照如下步骤进行。
+步骤一：多人协同工作
+
+1）远程连接两个终端，每个人下载代码本地副本，注意web1(192.168.2.100)和web2（192.168.2.200）代表了两个不同的主机，看清楚操作是在哪一台计算机上执行！
+[root@web1 ~]# cd /tmp
+[root@web1 ~]# svn --username harry --password pass \
+> co svn://192.168.2.100/project mycode
+[root@web2 ~]# cd /tmp
+[root@web2 ~]# svn --username tom --password pass \
+> co svn://192.168.2.100/project mycode
+[root@web1 ~]# cd mycode
+[root@web2 ~]# cd mycode
+
+2) harry和tom修改不同的文件
+[root@web1 mycode]# sed -i "3a ###harry modify#####"  tmp.mount
+[root@web1 mycode]# svn ci -m  "has modified"
+[root@web2 mycode]# sed -i "3a ###tom modify#####"  umount.target
+[root@web2 mycode]# svn ci -m "has modified"
+[root@web2 mycode]# svn update
+[root@web1 mycode]# svn update
+
+
+3）harry和tom修改相同文件的不同行
+[root@srv5 ~]# cd harry
+[root@web1 mycode]# sed -i "3a ###harry modify#####" user.slice
+[root@web1 mycode]# svn ci -m  "modified"
+[root@web2 mycode]# sed -i "6a ###tom  modify#####"  user.slice
+[root@web2 mycode]# svn ci -m "modified"        //提交失败
+Sending        svnserve
+Transmitting file data .svn: Commit failed (details follow):
+svn: File '/user.slice' is out of date
+[root@web2 mycode]#svn update                    //提示失败后，先更新再提交即可
+[root@web2 mycode]# svn ci -m "modified"        //提交成功
+Sending        user.slice
+Transmitting file data .
+
+4) harry和tom修改相同文件的相同行
+[root@web1 mycode]# sed  -i  '1c [UNIT]' tuned.service
+[root@web1 mycode]# svn ci -m "modified"
+[root@web2 mycode]# sed  -i  '1c [unit]' tuned.service
+[root@web2 mycode]# svn ci -m "modified"
+Sending        tuned.service
+Transmitting file data .svn: Commit failed (details follow):
+svn: File '/tuned.service' is out of date
+[root@web2 mycode]#
+ svn 
+update                    //出现冲突，需要解决
+Conflict discovered in 'tuned.service'.
+Select: (p) postpone, (df) diff-full, (e) edit,
+        (mc) mine-conflict, (tc) theirs-conflict,
+        (s) show all options:p                    //选择先标记p，随后解决
+[root@web2 mycode]# ls
+tuned.service   tuned.service.mine        tuned.service.r10    tuned.service.r9
+[root@web2 mycode]# mv tuned.service.mine tuned.service
+[root@web2 mycode]# rm  -rf  tuned.service.r10 tuned.service.r9
+[root@web2 mycode]# svn ci -m "modified"    //解决冲突
+
+
+步骤二：使用dump指令备份版本库数据
+
+[root@web1 ~]# svnadmin dump /var/svn/project > project.bak  //备份
+* Dumped revision 0.
+* Dumped revision 1.
+* Dumped revision 2.
+* Dumped revision 3.
+* Dumped revision 4.
+* Dumped revision 5.
+* Dumped revision 6.
+* Dumped revision 7.
+* Dumped revision 8.
+* Dumped revision 9.
+* Dumped revision 10.
+* Dumped revision 11.
+[root@web1 ~]# svnadmin load /var/svn/project2 < project.bak      //还原
+
+
+######################################################################
+
+GitHub是一个面向开原及私有软件项目的托管平台，因为只支持git作为唯一的版本库格式进行托管，故名Github
+GitHub于2008年4月10日正式上线
+
+
+
+[root@room9pc01 test]# yum -y install git
+
+[root@room9pc01 test]# git clone https://github.com/blacksnowsnow/test
+#下载仓库
+
+[root@room9pc01 test]# git add .
+#添加要上传的文件
+[root@room9pc01 test]# git commot -m 'modify bug'
+#准备上传备注
+[root@room9pc01 test]# git push
+#上传服务器
+
+显示对应的克隆地址：
+#git remote -v
+
+#同步到服务器前要先将服务器代码同步到本地
+[root@room9pc01 tedu]# git pull
+
+
+######################################################################
+
+
+3 案例3：制作nginx的RPM包
+3.1 问题
+什么是RPM包
+1.RPM是一个压缩包
+2.描述信息
+
+本案例使用nginx-1.12.2版本的源码软件，生产对应的RPM包软件，具体要求如下：
+软件名称为nginx
+软件版本为1.12.2
+RPM软件包可以查询描述信息
+RPM软件包可以安装及卸载
+
+
+步骤一：安装rpm-build软件
+
+1）安装rpm-build软件包
+[root@web1 ~]# yum -y install  rpm-build
+2）生成rpmbuild目录结构
+[root@web1 ~]# rpmbuild -ba nginx.spec                //会报错，没有文件或目录
+[root@web1 ~]# ls /root/rpmbuild                    //自动生成的目录结构
+BUILD  BUILDROOT  RPMS  SOURCES  SPECS  SRPMS
+
+3）准备工作，将源码软件复制到SOURCES目录
+[root@web1 ~]# cp nginx-1.12.2.tar.gz /root/rpmbuild/SOURCES/
+
+4）创建并修改SPEC配置文件
+[root@web1 ~]# vim /root/rpmbuild/SPECS/nginx.spec 
+Name:nginx        //名字
+Version:1.12.0     //版本
+Release:    10        //多少次
+Summary: Nginx is a web server software.   //简素    
+License:GPL    //简称1.2.3 
+URL:    www.test.com    //网址
+Source0:nginx-1.12.2.tar.gz  //tar包名
+#BuildRequires:    
+#Requires:                           //nginx安装时的一些依赖关系  
+%description
+nginx [engine x] is an HTTP and reverse proxy server.
+%prep
+%setup –q                            //自动解压源码包，并cd进入目录
+%build
+./configure
+make %{?_smp_mflags}
+%install
+make install DESTDIR=%{buildroot}
+cp /root/rpmbuild/SPECS/nginx.sh %{buildroot}/usr/local/nginx/    
+##//非必须操作，注意，这里是将一个脚本拷贝到安装目录，必须提前准备该文件
+%files
+%doc
+/usr/local/nginx/*            //对哪些文件与目录打包
+%changelog
+%pre
+#安装前的准备工作
+
+%post
+#安装后的工作，如设置服务的开机启动，定时任务的设定，启动服务等等
+
+%preun
+#卸载前的工作，例如停止服务，关闭服务的开机启动，删除定时任务等
+
+
+
+
+##################################################################
+
+GRE VPN (Linux----Linux)
+PPTP VPN (Linux----windows,数据不加密，用户名密码加密)
+L2TP+IPSec VPN（Linux----windows数据用户密码加密）
+
+VPN 	-在公用网络上建立专用私有网络，进行加密通讯
+	-多用于集团公司的各地子公司建立连接
+	-连接完成后，各地区的子公司可以像局域网一样通讯
+
+1）查看计算机当前加载的模块
+[root@client ~]# lsmod                            //显示模块列表
+[root@client ~]# lsmod  | grep ip_gre            //确定是否加载了gre模块
+
+2)加载模块ip_gre
+[root@client ~]# modprobe  ip_gre 
+
+3）查看模块信息
+[root@client ~]# modinfo ip_gre
+
+步骤二：Client主机创建VPN隧道
+
+1）创建隧道
+[root@client ~]# ~]# ip tunnel add tun0  mode gre \ 
+>  remote 201.1.2.5 local 201.1.2.10
+//ip tunnel add创建隧道（隧道名称为tun0），ip tunnel help可以查看帮助
+//mode设置隧道使用gre模式
+//local后面跟本机的IP地址，remote后面是与其他主机建立隧道的对方IP地址
+
+ip link show
+
+2）启用该隧道（类似与设置网卡up）
+[root@client ~]# ip link set tun0 up         //设置UP
+
+2）为VPN配置隧道IP地址
+[root@client ~]# ip addr add 10.10.10.10/24 peer 10.10.10.5/24 dev tun0
+//为隧道tun0设置本地IP地址（10.10.10.10.10/24）
+//隧道对面的主机IP的隧道IP为10.10.10.5/24
+
+3)查看配好的IP
+[root@client ~]# ip address show
+
+##########################################################
+
+
+NTP时间同步
+
+Network Time Protocol（网络时间协议）采用的是分层设计，如图-9所示，Stratum层的总数限制在15以内。
+4.3 步骤
+
+实现此案例需要按照如下步骤进行。
+步骤一：部署NTP服务
+
+1）安装软件包
+[root@proxy ~]# yum -y install chrony
+[root@proxy ~]# rpm -qc chrony                        //查看配置文件列表
+/etc/chrony.conf
+/etc/chrony.keys
+
+2)修改配置文件
+[root@proxy ~]# cat /etc/chrony.conf
+.. ..
+server 0.centos.pool.ntp.org iburst         //server用户客户端指向上层NTP服务器
+allow 192.168.4.0/24                        //允许那个IP或网络访问NTP
+#deny  192.168.4.1                        //拒绝那个IP或网络访问NTP
+local stratum 10                            //设置NTP服务器的层数量
+.. ..
+
+4)启动NTP服务
+[root@proxy ~]# systemctl  restart  chronyd
+[root@proxy ~]# systemctl  enable  chronyd
+
+
+步骤二：配置客户端
+
+1）安装软件包
+[root@client ~]# yum –y install chrony
+2) 修改配置文件
+[root@client ~]# vim /etc/chrony.conf
+server 192.168.4.5 iburst                //设置与哪台服务器同步数据
+                                        //iburst参数设置重启服务后尽快同步时间
+
+############################################################
+wget https://github.com/knktc/insecure_pssh/archive/master.zip
+3. unzip master
+
+4. cd insecure_pssh-master
+
+5. 赋予其执行权限：
+
+chmod +x pscp pslurp pssh
+
+6. 直接使用即可，无需安装了。
+
+说明：
+
+1.host.txt里面格式如下：
+
+用户名：密码@主机
+
+root:redhat@10.9.9.2
+
+root:jyddy123@10.9.9.101
+#######################################
+5 案例5：pssh远程套件工具
+5.1 问题
+
+本案例要求使用pssh套件工具并发远程其他主机，具体要求如下：
+使用密码批量、多并发远程其他主机
+使用密钥批量、多并发远程其他主机
+批量、多并发拷贝数据到其他主机
+批量、多并发从其他主机下载数据到本机
+批量、多并发杀死其他主机的进程
+
+安装pssh后会提供如下命令：
+/usr/bin/pnuke
+/usr/bin/prsync
+/usr/bin/pscp.pssh
+/usr/bin/pslurp
+/usr/bin/pssh
+5.3 步骤
+
+实现此案例需要按照如下步骤进行。
+步骤一：准备工作
+
+1）安装软件包
+[root@proxy ~]# rpm -ivh  pssh-2.3.1-5.el7.noarch.rpm
+2)修改/etc/hosts本地解析文件
+cat /etc/hosts
+… …
+192.168.2.100  host1
+192.168.2.200  host2
+192.168.4.100  host3
+
+3)创建主机列表文件
+[root@proxy ~]# cat /root/host.txt            //每行一个用户名、IP或域名
+… …
+root@host1
+host2
+host3
+
+步骤二：使用密码批量、多并发远程其他主机
+
+1）语法格式
+[root@proxy ~]# man pssh                    //通过man帮助查看工具选项的作用
+pssh提供并发远程连接功能
+-A                使用密码远程其他主机（默认使用密钥）
+-i                将输出显示在屏幕
+-H                设置需要连接的主机
+-h                设置主机列表文件
+-p                设置并发数量
+-t                设置超时时间
+-o dir            设置标准输出信息保存的目录
+-e dir            设置错误输出信息保存的目录
+-x                传递参数给ssh
+
+2)使用密码远程多台主机执行命令，屏幕显示标准和错误输出信息
+[root@proxy ~]# pssh -i  -A -H  'host1 host2 host3'   \
+>  -x '-o StrictHostKeyChecking=no'   echo hello
+pssh -i -H host1 -H host2 -x "-O StrictHostKeyChecking=no -O  User‐  KnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null" echo hi
+
+步骤三：使用密钥批量、多并发远程其他主机
+
+1）生成密钥并发送密钥到其他主机
+[root@proxy ~]# ssh-keygen -N  ''   -f /root/.ssh/id_rsa     //非交互生成密钥文件
+[root@proxy ~]# ssh-copy-id -i /root/.ssh/id_rsa.pub host1    //i 把哪个密钥给他
+[root@proxy ~]# ssh-copy-id -i /root/.ssh/id_rsa.pub host2
+[root@proxy ~]# ssh-copy-id -i /root/.ssh/id_rsa.pub host3
+
+
+2)使用密钥远程其他主机
+[root@proxy ~]# pssh  -h host.txt -x '-o StrictHostKeyChecking=no' echo hello
+3)使用密钥远程其他主机，将标准输出信息写入到/tmp目录
+[root@proxy ~]# pssh -i -h host.txt -o /tmp/ -x '-o StrictHostKeyChecking=no' echo hello
+
+步骤四：批量、多并发拷贝数据到其他主机
+
+1）语法格式
+[root@proxy ~]# man pscp.pssh                    //通过man帮助查看工具选项的作用
+pscp.pssh                                    提供并发拷贝文件功能
+-r                                           递归拷贝目录
+其他选项基本与pssh一致
+2)将本地的etc.tar.gz拷贝到远程主机的根目录下
+[root@proxy ~]# pscp.pssh -h host.txt  etc.tar.gz / 
+3)递归将本地的/etc目录拷贝到远程主机的/tmp目录下
+[root@proxy ~]#  pscp.pssh -r -h host.txt /etc   /tmp 
+
+
+步骤五：批量、多并发从其他主机下载数据到本机
+
+1）语法格式
+[root@proxy ~]# man pslurp                    //通过man帮助查看工具选项的作用
+pslurp提供远程下载功能
+选项与pscp.pssh基本一致
+2)将远程主机的/etc/目录，拷贝到当前目录下，存放在对应IP下的tmp目录
+[root@proxy ~]# pslurp -r -h host.txt   /etc /tmp
+3)将远程主机的/etc/目录，拷贝到media下，存放在对应IP下的tmp目录
+[root@proxy ~]# pslurp -r -h host.txt  -L  /media   /etc   /tmp
+
+
+步骤六：批量、多并发杀死其他主机的进程
+
+1）语法格式
+[root@proxy ~]# man pnuke                    //通过man帮助查看工具选项的作用
+pnuke提供远程杀死进程的功能
+选项与pssh基本一致
+
+2)将远程主机上的sleep进程杀死
+[root@proxy ~]# pnuke  -h host.txt  sleep
+3)将远程主机上的test相关脚本都杀死（如：test1,testtt,test2等等）
+[root@proxy ~]# pnuke  -h host.txt   test
+4)将远程主机上的test.sh脚本杀死
+[root@proxy ~]# pnuke  -h host.txt  test.sh
+
+######################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,684 @@
+
+mysql数据库管理day01
+工作邮箱 panglj@tedu.cn 庞丽静
+
+数据库使用：购物网站、游戏网站、金融网站、博客
+数据存储的数据：帐号信息、对应的数据信息
+数据库软件（开源）：mysql、mariadb、mongodb、redis
+数据库软件（商业）：oracle、db2、SQL SERVER（微软）
+软件平台：Linux、Unix、Windows
+软件包软件：官网下载
+
+mysql软件：
+	关系型数据型软件，要按照一定组织机构存储数据，并且数据和数据之间可以互相关联操作
+	跨平台 Linux Unix Widows
+	可移植性强
+	支持多种语言Python、Java、Perl、PHP
+	生产环境中，数据服务和网站服务一起使用
+	mysql软件包封包类型：rpm包 源码包 可以自定义安装信息
+
+非关系型数据型软件（NoSQL） mongodb、redis、memcached
+
+1.搭建数据库服务器  192.168.4.51
+
+-装包
+1.1 删除系统自带的mariadb软件
+rpm -qa |grep -i mariadb
+rpm -e --nodeps mariadb-server mariadb（忽略依赖关系）
+1.2安装mysql软件  mysql-5.7.17-1.el7.x86_64.rmp-bundle.tar
+rm -rf mysql-community-server-minimal-5.7.17-1.el7.x86_64.rpm
+yum -y install perl-JSON
+rpm -Uvh mysql-community-*.rpm
+
+——启动服务
+systemctl start mysqld
+systemctl enable mysqld
+
+
+——查看服务进程和端口号
+ss -natlp |grep mysql
+LISTEN     0      80          :::3306                    :::*                   users:(("mysqld",pid=3317,fd=22)
+日志文件 /var/log/mysqld.log
+配置文件 /etc/my.cnf
+
+2.数据库服务的基本使用
+
+2.1 使用初始密码在本机连接数据库服务
+mysql -h 数据库服务器IP地址 -u 用户名 -p 密码 库名（可省略）
+cat /var/log/mysqld.log  |grep password (查看数据库初始密码)
+mysql -hlocalhost -uroot -p'9lqZc<+af1;n' (密码有特殊符号要用‘’)
+
+2.2 重置本机连接密码
+临时配置密码验证策略
+> set global validate_password_policy=0(0表示策略不开启，只检查密码的长度)
+> set global validate_password_length=6（密码长度不能少于6个字符）
+
+永久生效
+vim /etc/my.cnf
+[mtsqld]
+validate_password_policy=0
+validate_password_length=6
+
+systemctl restart mysqld
+
+> alter user root@'localhost' identified by '密码'；
+
+2.3 把数据存储在数据库服务器上的过程
+连接数据库服务器（命令行 API 图形工具）
+选择库（存放数据的文件夹）
+选择表 （就是文件）
+插入记录 （）
+
+2.4 sql命令分类
+DDL DML DTL DCL
+
+2.5 sql命令使用规则
+
+
+2.6 管理数据库的sql命令 及 库名的命名规则
+——查看 show databases;
+——创建 create database 库名；
+——切换 use 库名；
+——删除 drop database 库名；
+——显示当前所在的库 select database();
+
+
+
+2.7 管理表的sql命令
+——查看 show tables;
+——建表 create table 库名.表名（ 字段名 类型（宽度），
+> create table gamedb.sutuinfo(name char（10），addr char(20));
+
+——删除 drop table 库名.表名；
+——查看表记录 select * from 库名.表名；
+——查看表结构 desc 库名表名；
+
+2.8 管理记录的sql命令
+——查看 select * from 库名.表名；
+
+——插入 insert into 库名，表名 values （“bobo”，“beijing”） 
+> insert into gamedb.stuinfo values("tom","beijing");
+> insert into gamedb.stuinfo values("bobo","beijing");
+
+——修改 update 库名.表名 set 字段名=值 where 条件;
+update gamedb.stuinfo set addr="shanghai"  where name="tom";
+
+——删除表记录 delete from 库名.表名；
+> delete from game.stuinfo;
+> delete from game.stuinfo where name='jian';
+
+######################################################################
+
+3.mysql数据类型
+3.1 数值类型 （成绩 年龄 工资）
+每种类型 的存储数据的范围都是固定
+整数类型  （只能存存储整数）
+   微小整型（TINYINT） 小整型（SMALLINT） 中整型（MEDIUMINT） 大整型（INT） 极大整型（BIGINT）
+   小数会四舍五入，大于类型会错误
+unsigned 使用数值类型有符号的范围
+
+
+> create talbe gamedb.t1 (level tint,age smallint);
+
+浮点型 （存储小数）
+float (M,N)  
+double (M,N) 99999.99 - (-99999.99)
+M 设置总位数
+N 设置小数位位数
+
+> create talbe gamedb.t2 (pay float(5,2));
+
+3.2字符类型 （商品名称 籍贯 姓名 生产厂家）
+char (255、不写默认为1)    固定长度字符类型（自己补齐，空间占用大）
+varchar(65532、不写会报错) 变长字符类型（CPU运算数入的字符长度，耗费资源会）
+
+大文本类型（音频文件、视频文件、图片文件）
+blob、text
+
+> create table t3 (name char(4),address varchar(10));
+> insert into t3 ("jian","beijing");
+
+3.3日期时间类型 （注册时间 约会时间 开会时间 入职时间 生日）
+
+年 		year YYYY 			2018
+日期 		date YYYYMMDD		20180423
+时间 		time HHMMSS			161958
+日期时间类型	datetime、timestamp
+		YYYYMMDDHHMMSS		20180423161958
+datetime 1000-01-01 ~ 9999-12-31 23:59:59 （默认赋值为NULL）
+timestamp 1970-01-01 2038-01-19 03:14:07.999999 (没赋值时，自动以当前系统时间赋值)
+
+获取日期时间给对应的日期时间类型的字段赋值
+获取日期时间函数
+now（）获取当前系统的时间
+year（日期时间）获取指定时间中的年 1901-2155
+month() 月份
+获取指定现在系统时间
+> select now();
+
+> select year(now());
+
+> select month（now（）） （日期时间）；
+
+> select date （now（））;
+
+获取自定义日期时间的time
+> select time (日期时间)
+
+可以使用2位数字给year类型
+> insert into t6(name,start_time) values ("tom",1966);
+
+
+3.4枚举类型（插入记录 时 记录的值在列举的范围内选择）
+		性别 爱好
+
+> create TABLE t8 （
+name varchar（8），
+sex enum（“boy”，“girl”，“no”），
+likes  set（“woman”，“game”，“money”，“flim”，“eat”））；
+
+> insert into t8 values ("xieyouyue",3,"money,eat");
+
+##############################################################################
+数值类型的宽度是显示宽度，不能够给字段赋值的大小，不够位数自动补位
+>create table t2 (age int(3) zerofill);     #zerofill 自动补齐
+##############################################################################
+
+mysql -day02
+1.字段约束条件
+1.1作用：限制如何给字段赋值的
+1.2包括内容有： NULL Key Default Extra
+NULL 是否允许给字段赋null值 默认允许赋null值
+	null	默认允许赋null值
+	not null 不允许赋null值
+key	键值类型：普通
+
+Default 默认值作用：当不被字段赋值时，使用默认值给字段赋值
+	  不设置默认值是 系统定义的是null
+	  default 值
+
+Extra 额外设置，字段是否设置为自动增加
+
+> create table t3 (name int(5) not null, classroom char(7) default "nsd1801",age tinyiny（2） unsigned zerofill default 18 ，sex enum（“boy”,"girl"）);
+
+2.修改表结构
+2.1修改表结构的命令    alter table 库. 表 执行动作；
+>
+
+——添加新字段 		add 字段 类型（宽度） 【约束条件】 【first、after 字段】
+> alter table student add sex enum("boy","girl") default "girl";
+
+——删除已有字段 		drop 字段名
+> alter table student drop name ,drop age ;
+
+——修改已有字段的类型宽度及约束条件  	modify 字段名 类型（宽度） 【约束条件】
+########修改时不能与已经存储的数据矛盾的话不允许修改##########
+
+> alter table student modify age tinyint(3) unsigned after name;
+> alter table student modify name varchar(10)  not null;
+
+——修改字段名 		change 源字段名 新字段名 类型（宽度） 【约束条件】
+> alter table t1 change addrhome home char(10) default "beijing";
+
+——修改表名 		alter table 源表名 rename  【to】 新表名；
+> alter table t1 rename dogperson
+
+3.mysql键值
+设置在表中字段上的，作用时约束如何给字段赋值，同时会给字段做索引
+
+索引介绍：树形目录结构 类似于书的“目录”
+优点：加快查询表记录的速度
+缺点：减慢编辑表记录的速度，且占用磁盘的物理存储空间
+
+DBA（数据库运维）
+3.1键值类型：普通索引 唯一索引 全文索引 主键 外键 
+
+3.1.1普通索引使用（index）
+——使用规则
+	一个表中可以有多个INDEX字段
+	字段的值允许有重复，且可以赋NULL值
+	经常把做查询条件的字段设置为INDEX字段
+	INDEX字段的KEY标志时MUL
+
+——查看  desc 表名；
+show index from 表名；
+> show index from t2\G;(\G每一行占一行显示)
+ 
+ Table: t2
+   Non_unique: 1
+     Key_name: aaa
+ Seq_in_index: 1
+  Column_name: age
+    Collation: A
+  Cardinality: 2
+         Null: YES
+   Index_type: BTREE(二叉树)
+
+
+创建
+——在已有表创建   create index 索引名 on 表名 （字段）；
+> create index aaa on t2(age);
+	
+——建表时创建  create talbe 表名( 字段列表，index（字段名），index（字段名）)；
+> create table t21( classroom char(7) default "nsd1801" , name char(5) not null, age tinyint(2) zerofill unsigned, sex enum("boy","girl") default "boy", index(age), index(name),index(classroom) );
+
+——删除 drop index 索引名 on 表名； .
+> drop index aaa on t21;
+   
+                                                                                                                                                                                                                                                                      
+3.1.2主键 primary ket
+	一个表中只能有一个primary key 字段
+	对应的字段值不允许有重复，且不允许赋null值
+	如果有多个字段都作为PRIMARY KEY ，称为复合主键，必须一起创建
+	主键字段的key标志是PRI
+	通常与AUTO_INCREMENT连用
+	经常把表中能够唯一标示记录的字段设置为主键字段
+
+创建 
+在已有表创建 alter table 表 add primary key(字段名)
+> alter table t21 add stu_id char(9) first;
+> alter talbe t21 add primary key(stu_id);
+
+——建表时  create table 表名（字段列表，primary key（字段名））;/ 
+	create table 表名 （字段 类型（宽度） primary key，。。。）；
+
+>create table studb.t22 (person_id char(18) primary key,name char(5), age tinyint(2) )
+
+
+——删除 alter table 表 drop primary key;
+> alter talbe t22 drop primart key;
+
+——复合主键使用
+>create table t23(clientip char(15),port smallint(2),status enum("allow","deny"),primary key(clientip,port));
+
+——主键primary key 通常和auto_increment连用，让字段的值自动增长i++(上个值+1)
+> create table t26 (stu_id int(2) zerofill primary key auto_increment),
+name char(10), age tinyint(2) unsigned,sex enum("boy","girl");
+
+> insert into t26 (name,age,sex) values ("bob",21,"boy");
+
+#####################################################################
+
+3.1.3外键 （作用 限制如何给字段赋值的）
+让当前表中字段赋值时，值只能在其他表的指定字段值的范围里选择
+
+——使用规则
+	表的存储引擎必须是innodb
+	字段类型(type)要一致
+	被参照字段必须要是索引类型的一种（primary key）
+
+——准备一个references表
+> create table jfb (fjb_id int(2) zerofill primary key auto_increment,name char(15), pay float(7,2))engine=innodb;
+
+> insert into jfb(name,pay) values ("tom",26800);
+
+——创建外键 foreign key 的命令格式：
+create table 表（ 字段名列表，foreign key（字段名） references 表名（字段名）
+on update cascade on delete cascade)engine=innodb；
+
+> create table bjb(
+bjb_id int(2) unsigned zerofill,
+name char(15),
+foreign key(bjb_id) references jfb(jfb_id) 
+on update cascade  on delete cascade);
+
+——更新(外键的内容会自己更新)
+> update jfb set jfb_id=9 where name='bob';
+
+——查看 desc 表名；(没用) show create table 表名;（）
+> show create table bjb;
+
+——删除外键 alter table 表名 drop forgign key 外键名；
+> alter table bjb drop forgign key bjb_ibfk_1；
+
+——在原有表创建外键（先删表，因为数据不符合外键规则）
+> delete from bjb;
+> alter table bjb add foreign key(bjb_id) references jfb(jfb_id)
+on update cascade on delete cascade;
+
+#############################################################
+
+mysql-day03
+
+1、mysql存储引擎（innodb）
+1.1存储引擎介绍：是mysql数据库软件自带的功能程序，
+		  每种存储引擎的功能和数据存储方式也不同
+		  存储引擎就处理表的处理器
+
+——作为可插拔式的组件提供
+	负责为数据库执行实际的数据I/O操作，不同的存储引擎，其存储数据的方式也不同
+	用户通过连接器访问MySQL数据库，根据实际需要选用何种存储引擎，避免大的编码更改
+
+1.2查看数据库服务支持的存储引擎有那些？
+> show engines; 
+
+1.3查看已有的表使用的存储引擎
+> show create table 表名；
+
+1.4修改数据库服务默认使用的存储引擎
+# vim /etc/my.cnf
+[mysqld]
+default-storage-engine=myisam
+
+# systemctl restart mysqld
+
+1.5修改表使用的存储引擎，或建表时指定表使用的存储引擎
+> create table 表（字段列表）engine=存储引擎名；
+> alter table 表 engine=存储引擎名；
+
+1.6常用存储引擎的特点
+
+
+
+————myisam特点
+不支持事物、事物回滚、外键
+支持表级锁
+存储方式：一个表对应3个存储文件
+	表名.frm   表结构
+	表名.MYD   数据
+ 	表名.MYI   索引
+
+——事物：对数据库服务的访问过程（连接数据库服务器 操作数据 断开连接）
+——事物回滚：在事物执行过程中，任何一步操作失败，都会恢复之前的所有操作。
+mysql数据库服务使用事物日志文件记录，对innodb存储引擎执行的sql操作
+cd /var/lib/mysql
+ib_logfile0 |
+		|记录SQL命令
+ib_logfile1 |
+
+ibdata ————>数据源（sql命令执行后产生的数据信息）
+
+——锁粒度：
+	表级锁（myisam）给整张表加锁
+	行级锁（innodb）只给表中当前被操作的行加锁
+——锁的作用：解决对表的并发访问冲突问题。
+		insert
+		delete
+——锁类型：
+	读锁
+	写锁
+
+
+1.7建表时如何决定表使用那种存储引擎
+
+
+1.8工作中怎么决定数据库服务器使用那种存储引擎
+执行写操作多的表适合使用innodb存储引擎，可以并发访问
+执行查操作多的表适合使用myisam存储引擎，可以节省系统资源
+
+
+2、数据导入导出（批量操作数据）
+2.1数据导入的命令格式及数据导入时的注意事项
+
+——查看文件内容时，默认在系统的什么目录下搜索文件
+> show variables like "secure_file_priv";
++--------------------------------+----------------------------------------+
+| Variable_name    | Value                 |
++--------------------------------+----------------------------------------+
+| secure_file_priv | /var/lib/mysql-files/ |
++--------------------------------+-----------------------------------------+
+
+	################################
+	#在mysql执行系统命令 system + 命令#
+	################################
+
+——修改导入文件系统默认的目录
+# vim /etc/my.cnf
+[mysqld]
+secure_file_priv="/mysqldata"
+
+# mkdir /mysqldata
+# chown mysql /mysqldata
+# setenforce 0
+# systemctl restart mysqld
+
+
+——数据导入：把系统文件的内容存储到数据库服务器的表里
+# cp /etc/passwd /var/lib/mysql-files/
+
+
+——创建存储数据表
+> username  char(50),
+password char(1),
+uid int(2),
+git int(2),
+comment char(100),
+home char(50),
+shell char(50),
+index (username));
+> desc db3.usertab;
+> select * from db3.usertab;
+
+——把系统已有用户的信息保存到db3库下的usertabd表里
+> load data infile "目录/文件名" into table 库.表
+fields terminated by "列间隔符号"
+lines terminated by "\n"
+
+> load data infile "/var/lib/mysql-files/passwd" into table db3.usertab
+fields terminated by ":"
+lines terminated by "\n"
+> alter table db3.usertab add id int(2) first primary key auto_increment 
+
+2.2数据导出的命令格式及数据导出时的注意事项
+——数据导出：把表记录存储到系统文件里
+
+> mysql查询命令  into outfile "目录名/文件名" 【fields terminated by "列间隔符"
+lines terminated by "\n"】
+> select username,uid from db2.usertab into outfile "/mysqldata/user1.txt" fields terminated by "###";
+
+
+3、管理表记录
+3.1插入记录 insert into （值要与字段类型和约束条件匹配）
+——插入一条记录给所有字段赋值
+> insert into 库.表 values(字段值列表)；
+
+——插入N条记录给所有字段赋值
+> insert into 库.表 values(字段值列表)，(字段值列表)；
+
+——插入一条记录给指定的字段赋值
+> insert into 库.表(字段名列表)  values(字段值列表)；
+
+——插入N条记录给指定的字段赋值
+> insert into 库.表(字段名列表)  values(字段值列表),(字段值列表)；
+
+3.2查看记录
+——查看表中所有行的所有字段的值
+> select * from 库.表 ;
+
+——查看表中所有行的指定字段的值
+> select 字段名1，字段名2  from 库.表 ;
+
+——查看指定行的指定字段的值
+> select 字段名1，字段名N form 库.表 where 匹配条件；  
+
+3.3修改记录 updata 库.表 set 字段名=值，字段名=值 where 匹配条件；
+
+——修改所有记录指定字段的值
+> updata 库.表 set 字段名=值，字段名=值；
+
+——修改与条件匹配的记录指定字段的值
+> updata 库.表 set 字段名=值，字段名=值 where 匹配条件；
+
+3.4删除记录
+——删除表中指定的行
+> delete from 库.表 where 条件；
+
+4、匹配条件（select、updata、delete记录时可以加条件）
+——数值比较
+=	!=	<	<= 	>	>=
+> select * from usertab where id<=10;
+——字符比较
+——范围内比较
+> 字段名 between 数字1 and 数字2；				 在..之间
+> 字段名 in (值列表) (10,20,30) ("root","rsync")；		 在..里
+> 字段名 not in (值列表)；						 不在..里
+> select username,id  from usertab where id between 1 and 10;
+
+——逻辑比较
+逻辑与 and 		 多个条件同时成立，才匹配
+逻辑或 or  	 	 多个条件，某一个条件成立，就匹配
+逻辑非 ！ 或 not	 取反
+> select name,uid from usertab where name="root" and uid=0;
+
+——匹配空
+匹配空 字段名 is null
+匹配空 字段名 not null
+> select username,uid,git from usertab  where uid is null or git is null ;
+
+——模糊匹配   字段名 like ‘表达式’；
+' % ' 表示零个或多个字符
+' _ ' 表任意一个字符
+> select username from usertab where username like "a%";
+> select username from usertab where username like "r__t";
+
+——正则匹配
+> 字段名 regexp ‘正则表达式’	^ $ . * [ ]
+
+>select username from usertab where username regexp "^[0-9]";
+>select username,uid from usertab where uid regexp "^..$"
+
+——四则运算(select 和 updata 操作时可以做数学计算)
+字段类型必须数值类型（整型或浮点型）		+ - * / %
+> select username,id,uid from usertab where id<=10;
+> ipdate usertab set uid=uid+1 where id <=10;
+> select username,uid,gid from usertab where username="mysql";
+> select username ,uid,gid,uid+gid as zh from usertab where username="mysql";
+> select username,uid,gid ,uid+gid as zh,(uid+gid)/2 as pjz from usertab where username="mysql";
+> alter table usertab add age tinyint(2) unsigned default 21 after username;
+
+——聚集函数（对字段的值做统计，字段的类型要求时数值类型）
+count（字段名） 统计字段值的个数
+sum （字段名） 求和
+max（字段名） 输出字段值的最大值
+min（字段名） 输出字段值的最小值
+avg （字段名） 输出字段值的平均值
+> select count(username) from usertab where shell="/bin/bash";
+
+——查询不显示字段重复值 distinct 字段名
+> select  distinct shell from usertab;
+
+——查询分组 ???
+> sql查询 group by 字段名；
+> select shell from usertab where uid >10 group by shell ;
+
+——查询排序（按照数值类型的字段排队）
+> sql查询 order by 字段名 asc（默认）|desc；
+> select username,uid from usertab where uid > 10 and uid <=100 order by uid desc;
+
+——限制查询显示行数(默认显示所有查询的记录)
+> sql查询 limit 数字；（显示查询结果的前几行）
+> sql查询 limit 数字1，数字2；（显示查询结果第几行后开始显示几行）
+> select * from usertab where limit 3，5;
+
+> select username,uid from usertab where uid > 10 and uid <=100 order by uid desc limit 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
