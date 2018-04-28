@@ -1,0 +1,650 @@
+
+<!-- saved from url=(0075)http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>CASE</title>
+    
+    <script type="text/javascript" src="./KVM_files/jquery.min.js">
+    </script>
+    <script type="text/javascript" src="./KVM_files/jquery.snippet.js">
+    </script>
+    <script type="text/javascript" src="./KVM_files/main.js">
+    </script>
+    <link type="text/css" href="./KVM_files/index.css" rel="Stylesheet">
+    <link type="text/css" href="./KVM_files/jquery.snippet.css" rel="Stylesheet">
+  </head>
+  <body>
+    <div class="source_style_case">
+      <a name="page_top_case" id="top_anchor">
+      </a><a id="link_top" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#page_top_case">Top</a>
+      <h1>NSD SERVICES DAY01</h1>
+      <ol class="index">
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case1">案例1：安装一个KVM服务器</a>
+        </li>
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case2">案例2：KVM平台构建及简单管理</a>
+        </li>
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case3">案例3：virsh基本管理操作</a>
+        </li>
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case4">案例4：xml配置文件的应用</a>
+        </li>
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case5">案例5：为虚拟机制作快照备份</a>
+        </li>
+        <li>
+          <a href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#case6">案例6：快建新虚拟机</a>
+        </li>
+      </ol>
+      <a name="case1">
+      </a>
+      <h2>1 案例1：安装一个KVM服务器</h2>
+      <h3>1.1 问题</h3>
+      <p>本例要求准备一台 RHEL7.2 服务器，将其搭建为KVM平台，主要完成下列操作：</p>
+      <ol class="list">
+        <li>关闭本机的SELinux保护、防火墙服务
+</li>
+        <li>挂载RHEL7光盘到 /mnt/dvd，将其配置为本机YUM源（baseurl = file:///mnt/dvd）
+</li>
+        <li>安装KVM相关包组，确保已启用 libvirtd 服务
+</li>
+      </ol>
+      <h3>1.2 方案</h3>
+      <p>RHEL7中的虚拟化服务软件组：</p>
+      <ul class="list">
+        <li>虚拟化平台 —— "Virtualization Platform"  
+</li>
+        <li>虚拟化主机 —— "Virtualization Host"  
+</li>
+        <li>虚拟化客户端 —— "Virtualization Client"
+</li>
+      </ul>
+      <p>另外需要注意，yum命令的软件组管理操作与RHEL6有些小变化：</p>
+      <ul class="list">
+        <li>yum  groups  list   [hidden]  [组名]... 
+</li>
+        <li>yum  groups  info  [组名]... 
+</li>
+        <li>yum  groups  install  [组名]... 
+</li>
+        <li>yum  groups  remove  [组名]... 
+</li>
+      </ul>
+      <h3>1.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：配置本地yum仓库</p>
+      <p>在光驱中插入RHEL7.2的系统光盘（若是虚拟机则连接相应ISO文件），然后在系统中将光盘挂载到/mnt目录。</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">mkdir  </span><span class="sh_symbol">/</span><span class="sh_normal">mnt</span><span class="sh_symbol">/</span>dvd  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//创建挂载点</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">vim  </span><span class="sh_symbol">/</span><span class="sh_normal">etc</span><span class="sh_symbol">/</span>fstab  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//添加开机挂载配置</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li><span class="sh_regexp">/dev/</span><span class="sh_normal">cdrom&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="sh_symbol">/</span><span class="sh_normal">mnt</span><span class="sh_symbol">/</span>dvd  &nbsp;&nbsp;&nbsp;&nbsp;iso9660&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ro&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_number">0</span>  <span class="sh_number">0</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># mount  <span class="sh_symbol">-</span>a&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//根据fstab配置挂载光盘</span></li><li>mount<span class="sh_symbol">:</span> <span class="sh_regexp">/dev/</span>sr0 is write<span class="sh_symbol">-</span><span class="sh_keyword">protected</span><span class="sh_symbol">,</span> mounting read<span class="sh_symbol">-</span>only</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# mkdir  /mnt/dvd  					//创建挂载点
+[root@kvmsvr ~]# vim  /etc/fstab  					//添加开机挂载配置
+.. ..
+/dev/cdrom	/mnt/dvd  	iso9660		ro		0  0
+[root@kvmsvr ~]# mount  -a							//根据fstab配置挂载光盘
+mount: /dev/sr0 is write-protected, mounting read-only
+</pre></div></div>
+      <p>2）确认/mnt/dvd访问点</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">ls  </span><span class="sh_symbol">/</span><span class="sh_normal">mnt</span><span class="sh_symbol">/</span><span class="sh_normal">dvd</span><span class="sh_symbol">/</span>Packages<span class="sh_comment">/*.rpm  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//确认软件包位置</span></li><li><span class="sh_comment">.. ..</span></li><li><span class="sh_comment">/mnt/Packages/zsh-5.0.2-14.el7.x86_64.rpm</span></li><li><span class="sh_comment">/mnt/Packages/zziplib-0.13.62-5.el7.i686.rpm</span></li><li><span class="sh_comment">/mnt/Packages/zziplib-0.13.62-5.el7.x86_64.rpm</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# ls  /mnt/dvd/Packages/*.rpm  		//确认软件包位置
+.. ..
+/mnt/Packages/zsh-5.0.2-14.el7.x86_64.rpm
+/mnt/Packages/zziplib-0.13.62-5.el7.i686.rpm
+/mnt/Packages/zziplib-0.13.62-5.el7.x86_64.rpm
+</pre></div></div>
+      <p>3）将本地目录/mnt/dvd配置为本机的yum源</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># yum<span class="sh_symbol">-</span>config<span class="sh_symbol">-</span>manager  <span class="sh_symbol">--</span>add<span class="sh_symbol">-</span>repo  file<span class="sh_symbol">:</span><span class="sh_comment">///mnt/dvd  &nbsp;&nbsp;&nbsp;&nbsp;//添加源</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">vim  </span><span class="sh_symbol">/</span><span class="sh_normal">etc</span><span class="sh_symbol">/</span>yum<span class="sh_symbol">.</span>repos<span class="sh_symbol">.</span><span class="sh_normal">d</span><span class="sh_symbol">/</span>mnt_dvd<span class="sh_symbol">.</span>repo </li><li><span class="sh_symbol">[</span>mnt_dvd<span class="sh_symbol">]</span></li><li>name<span class="sh_symbol">=</span>added from<span class="sh_symbol">:</span> file<span class="sh_symbol">:</span><span class="sh_comment">///mnt/dvd</span></li><li>baseurl<span class="sh_symbol">=</span>file<span class="sh_symbol">:</span><span class="sh_comment">///mnt/dvd</span></li><li>enabled<span class="sh_symbol">=</span><span class="sh_number">1</span></li><li>gpgcheck<span class="sh_symbol">=</span><span class="sh_number">0</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//禁止GPG检查</span></li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># yum  repolist  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//列出可用仓库</span></li><li>mnt_dvd                                 <span class="sh_symbol">|</span> <span class="sh_number">4.1</span> kB     <span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">00</span>     </li><li><span class="sh_symbol">(</span><span class="sh_number">1</span><span class="sh_symbol">/</span><span class="sh_number">2</span><span class="sh_symbol">):</span> <span class="sh_normal">mnt_dvd</span><span class="sh_symbol">/</span>group_gz                   <span class="sh_symbol">|</span> <span class="sh_number">136</span> kB   <span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">00</span>     </li><li><span class="sh_symbol">(</span><span class="sh_number">2</span><span class="sh_symbol">/</span><span class="sh_number">2</span><span class="sh_symbol">):</span> <span class="sh_normal">mnt_dvd</span><span class="sh_symbol">/</span>primary_db                 <span class="sh_symbol">|</span> <span class="sh_number">3.6</span> MB   <span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">00</span>     </li><li>repo id           repo name                              status</li><li>mnt_dvd           added from<span class="sh_symbol">:</span> file<span class="sh_symbol">:</span><span class="sh_comment">///mnt/dvd            4620</span></li><li>repolist<span class="sh_symbol">:</span> <span class="sh_number">4620</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# yum-config-manager  --add-repo  file:///mnt/dvd  	//添加源
+.. ..
+[root@kvmsvr ~]# vim  /etc/yum.repos.d/mnt_dvd.repo 
+[mnt_dvd]
+name=added from: file:///mnt/dvd
+baseurl=file:///mnt/dvd
+enabled=1
+gpgcheck=0  													//禁止GPG检查
+
+[root@kvmsvr ~]# yum  repolist  								//列出可用仓库
+mnt_dvd                                 | 4.1 kB     00:00     
+(1/2): mnt_dvd/group_gz                   | 136 kB   00:00     
+(2/2): mnt_dvd/primary_db                 | 3.6 MB   00:00     
+repo id           repo name                              status
+mnt_dvd           added from: file:///mnt/dvd            4620
+repolist: 4620
+</pre></div></div>
+      <p class="number">步骤二：确认RHEL7中的虚拟化软件组</p>
+      <p>1）安装兼容组信息</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># yum  groups  mark  convert</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>There is no installed groups file<span class="sh_symbol">.</span></li><li>Maybe run<span class="sh_symbol">:</span> yum groups mark <span class="sh_function">convert</span> <span class="sh_symbol">(</span>see man yum<span class="sh_symbol">)</span></li><li>Converted old style groups to objects<span class="sh_symbol">.</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# yum  groups  mark  convert
+.. ..
+There is no installed groups file.
+Maybe run: yum groups mark convert (see man yum)
+Converted old style groups to objects.
+</pre></div></div>
+      <p>2）查看全部软件组，过滤出与虚拟化相关的软件组</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># yum  groups  list  hidden<span class="sh_symbol">|</span> grep  <span class="sh_symbol">-</span>i  virt</li><li>   Virtualization Host</li><li>   Virtualization Client</li><li>   Virtualization Hypervisor</li><li>   Virtualization Tools</li><li>   Virtualization Platform</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# yum  groups  list  hidden| grep  -i  virt
+   Virtualization Host
+   Virtualization Client
+   Virtualization Hypervisor
+   Virtualization Tools
+   Virtualization Platform
+</pre></div></div>
+      <p>其中主要的KVM软件组包括Virtualization Host、Virtualization Client、Virtualization Platform，其他两个组会由于依赖关系自动被关联。</p>
+      <p class="number">步骤三：安装KVM虚拟化</p>
+      <p>1）安装主要KVM软件组</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@pc207 <span class="sh_symbol">~]</span># yum  <span class="sh_symbol">-</span>y  groups  install  <span class="sh_string">"Virtualization Host"</span>  <span class="sh_string">"Virtualization Client"</span>  <span class="sh_string">"Virtualization Platform"</span> </li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@pc207 ~]# yum  -y  groups  install  "Virtualization Host"  "Virtualization Client"  "Virtualization Platform" 
+.. ..
+</pre></div></div>
+      <p>2）确保libvirtd服务可用</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style=""><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># systemctl  restart  libvirtd</li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># systemctl  enable  libvirtd</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# systemctl  restart  libvirtd
+[root@kvmsvr ~]# systemctl  enable  libvirtd
+</pre></div></div>
+      <p>3)确保虚拟系统管理器（virt-manager）可用</p>
+      <p>在KVM服务器的桌面环境中，可以通过“应用程序”菜单组找到“系统工具”--&gt;“虚拟系统管理器”快捷方式（如图-1所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image001.png">
+        <p>图-1</p>
+      </div>
+      <p>单击可以成功开启KVM管理工具（如图-2所示），可以看到还没有任何虚拟机。</p>
+      <div class="image">
+        <img src="./KVM_files/image002.png">
+        <p>图-2</p>
+      </div>
+      <a name="case2">
+      </a>
+      <h2>2 案例2：KVM平台构建及简单管理</h2>
+      <h3>2.1 问题</h3>
+      <p>本例要求在真实KVM服务器上完成以下任务：</p>
+      <ol class="list">
+        <li>新建一个名为 rhel7.2 的虚拟机，并为其安装好操作系统（注意禁用SELinux机制、禁用防火墙）
+</li>
+        <li>将虚拟机 rhel7.2 克隆为 rhel7-c1 
+</li>
+        <li>开启虚拟机 rhel7-c1 ，以 root 用户登入到系统
+</li>
+        <li>彻底删除虚拟机 rhel7-c1
+</li>
+      </ol>
+      <h3>2.2 方案</h3>
+      <p>使用KVM提供的virt-manager图形化管理程序来操作。</p>
+      <h3>2.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：新建名为rhel7.2的虚拟机</p>
+      <p>1）在“虚拟系统管理器”中单击左上方“创建新虚拟机”按钮（如图-3所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image003.png">
+        <p>图-3</p>
+      </div>
+      <p>2）弹出“新建虚拟机”向导，选择“本地安装介质”（如图-4所示），单击“前进”。</p>
+      <div class="image">
+        <img src="./KVM_files/image004.png">
+        <p>图-4</p>
+      </div>
+      <p>3）接下来“定位安装介质”，请正确指定RHEL7系统的ISO光盘镜像文件位置（如图-5所示），确认自动识别到操作系统类型，单击“前进”。</p>
+      <div class="image">
+        <img src="./KVM_files/image005.png">
+        <p>图-5</p>
+      </div>
+      <p>4）选择内存和CPU设置，建议为虚拟机分配内存不小于1024MB（如图-6所示），单击“前进”。</p>
+      <div class="image">
+        <img src="./KVM_files/image006.png">
+        <p>图-6</p>
+      </div>
+      <p>5）为虚拟机启用存储，例如分配一个40GiB的磁盘（如图-7所示），单击“前进”。</p>
+      <div class="image">
+        <img src="./KVM_files/image007.png">
+        <p>图-7</p>
+      </div>
+      <p>6）为虚拟机命名，设为rhel7.2（如图-8所示），单击“完成”。</p>
+      <div class="image">
+        <img src="./KVM_files/image008.png">
+        <p>图-8</p>
+      </div>
+      <p class="number">步骤二：为虚拟机rhel7.2安装操作系统</p>
+      <p>1）确认新虚拟机从光盘引导</p>
+      <p>上述设置全部完成后，将会自动开启新虚拟机，并进入安装过程（如图-9所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image009.png">
+        <p>图-9</p>
+      </div>
+      <p>2）完成后续手动安装过程</p>
+      <p>具体过程与普通安装相同，注意禁用防火墙、禁用SELinux机制。</p>
+      <p>3）确认安装结果</p>
+      <p>新装的虚拟机rhel7.2可以正常启动、登录。</p>
+      <p>在“虚拟系统管理器”中也能够看到此虚拟机（如图-10所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image010.png">
+        <p>图-10</p>
+      </div>
+      <p class="number">步骤三：克隆虚拟机并验证</p>
+      <p>1）将被克隆的虚拟机rhel7.2关机</p>
+      <p>右击选中的虚拟机rhel7.2，选择“关机”--&gt;“强制关机”（如图-11所示），根据提示确认即可。</p>
+      <div class="image">
+        <img src="./KVM_files/image011.png">
+        <p>图-11</p>
+      </div>
+      <p>2）执行克隆操作</p>
+      <p>右击已关闭的虚拟机rhel7.2，选择“克隆”，在弹出对话框中指定名称，确认默认设置（如图-12所示），然后单击右下角的“克隆”按钮完成操作。</p>
+      <div class="image">
+        <img src="./KVM_files/image012.png">
+        <p>图-12</p>
+      </div>
+      <p>3）确认克隆结果</p>
+      <p>新克隆的虚拟机rhel7.2-c1可以正常启动、登录，可以独立运行。</p>
+      <p>在“虚拟系统管理器”中也能够看到此虚拟机（图-13所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image013.png">
+        <p>图-13</p>
+      </div>
+      <p class="number">步骤四：删除指定的虚拟机</p>
+      <p>1）删除虚拟机rhel7.2-c1</p>
+      <p>将虚拟机rhel7.2-c1关机，右击选择“删除”，在弹出窗口中根据需要确认是否删除虚拟机的磁盘，单击右下角的“删除”按钮即可（如图-14所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image014.png">
+        <p>图-14</p>
+      </div>
+      <p>2）确认删除结果</p>
+      <p>在“虚拟系统管理器”界面中，虚拟机rhel7.2-c1已经没有了（如图-15所示）。</p>
+      <div class="image">
+        <img src="./KVM_files/image015.png">
+        <p>图-15</p>
+      </div>
+      <a name="case3">
+      </a>
+      <h2>3 案例3：virsh基本管理操作</h2>
+      <h3>3.1 问题</h3>
+      <p>本例要求学会使用virsh命令管理KVM虚拟机，主要完成下列任务：</p>
+      <ol class="list">
+        <li>查看当前KVM服务器的内存/CPU
+</li>
+        <li>列出有哪些虚拟机、查看各虚拟机的状态
+</li>
+        <li>启动/重启/关机/强制关机操作
+</li>
+        <li>设置虚拟机开机自动运行
+</li>
+      </ol>
+      <h3>3.2 方案</h3>
+      <p>virsh命令提供了用来管理各虚拟机的命令接口，支持交互模式，可以实现对虚拟机的查看/创建/停止/关闭等各种操作。</p>
+      <p>用法参考：</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li>virsh  控制指令  <span class="sh_symbol">[</span>虚拟机名称<span class="sh_symbol">]</span>  <span class="sh_symbol">[</span>参数<span class="sh_symbol">]</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">virsh  控制指令  [虚拟机名称]  [参数]
+</pre></div></div>
+      <h3>3.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：查看KVM服务器及虚拟机信息</p>
+      <p>1）查看KVM服务器节点</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  nodeinfo</li><li>CPU 型号：        x86_64</li><li>CPU：               <span class="sh_number">4</span></li><li>CPU 频率：        <span class="sh_number">2600</span> MHz</li><li>CPU socket：        <span class="sh_number">1</span></li><li>每个 socket 的内核数： <span class="sh_number">4</span></li><li>每个内核的线程数： <span class="sh_number">1</span></li><li>NUMA 单元：       <span class="sh_number">1</span></li><li>内存大小：      <span class="sh_number">16230564</span> KiB</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  nodeinfo
+CPU 型号：        x86_64
+CPU：               4
+CPU 频率：        2600 MHz
+CPU socket：        1
+每个 socket 的内核数： 4
+每个内核的线程数： 1
+NUMA 单元：       1
+内存大小：      16230564 KiB
+</pre></div></div>
+      <p>2）列出有哪些虚拟机（包括未开启的）及各自的状态</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all</li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel7<span class="sh_number">.2</span>                        shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  list  --all
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel7.2                        shut off
+</pre></div></div>
+      <p>3）查看指定虚拟机rhel7.2的配置摘要信息</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  dominfo  rhel7<span class="sh_number">.2</span> </li><li>Id<span class="sh_symbol">:</span>             <span class="sh_symbol">-</span></li><li>Name<span class="sh_symbol">:</span>           rhel7<span class="sh_number">.2</span></li><li>UUID<span class="sh_symbol">:</span>           207a2b25<span class="sh_symbol">-</span>fd0f<span class="sh_symbol">-</span>436e<span class="sh_symbol">-</span>81ae<span class="sh_symbol">-</span>ad0fa8861315</li><li>OS Type<span class="sh_symbol">:</span>        hvm</li><li>State<span class="sh_symbol">:</span>          shut off</li><li><span class="sh_function">CPU</span><span class="sh_symbol">(</span>s<span class="sh_symbol">):</span>         <span class="sh_number">1</span></li><li>Max memory<span class="sh_symbol">:</span>     <span class="sh_number">1000448</span> KiB</li><li>Used memory<span class="sh_symbol">:</span>    <span class="sh_number">0</span> KiB</li><li>Persistent<span class="sh_symbol">:</span>     yes</li><li>Autostart<span class="sh_symbol">:</span>      disable</li><li>Managed save<span class="sh_symbol">:</span>   no</li><li>Security model<span class="sh_symbol">:</span> selinux</li><li>Security DOI<span class="sh_symbol">:</span>   <span class="sh_number">0</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  dominfo  rhel7.2 
+Id:             -
+Name:           rhel7.2
+UUID:           207a2b25-fd0f-436e-81ae-ad0fa8861315
+OS Type:        hvm
+State:          shut off
+CPU(s):         1
+Max memory:     1000448 KiB
+Used memory:    0 KiB
+Persistent:     yes
+Autostart:      disable
+Managed save:   no
+Security model: selinux
+Security DOI:   0
+</pre></div></div>
+      <p class="number">步骤二：虚拟机开关机操作</p>
+      <p>1）将虚拟机rhel7.2开启</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  start  rhel7<span class="sh_number">.2</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//开机</span></li><li>Domain rhel7<span class="sh_number">.2</span> started</li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//检查结果</span></li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_number">5</span>     rhel7<span class="sh_number">.2</span>                        running</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  start  rhel7.2  							//开机
+Domain rhel7.2 started
+
+[root@kvmsvr ~]# virsh  list  									//检查结果
+ Id    Name                           State
+----------------------------------------------------
+ 5     rhel7.2                        running
+</pre></div></div>
+      <p>2）将虚拟机rhel7.2关机</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  shutdown  rhel7<span class="sh_number">.2</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//关机</span></li><li>Domain rhel7<span class="sh_number">.2</span> is being shutdown</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span> <span class="sh_comment">//稍等片刻</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//检查结果</span></li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel7<span class="sh_number">.2</span>                        shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  shutdown  rhel7.2  						//关机
+Domain rhel7.2 is being shutdown
+.. .. //稍等片刻
+[root@kvmsvr ~]# virsh  list  --all								//检查结果
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel7.2                        shut off
+</pre></div></div>
+      <p>3）将虚拟机rhel7.2强制关机（shutdown无效时适用）</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  destroy  rhel7<span class="sh_number">.2</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//强制关机</span></li><li>Domain rhel7<span class="sh_number">.2</span> destroyed</li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//检查结果</span></li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel7<span class="sh_number">.2</span>                        shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  destroy  rhel7.2 							//强制关机
+Domain rhel7.2 destroyed
+
+[root@kvmsvr ~]# virsh  list  --all								//检查结果
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel7.2                        shut off
+</pre></div></div>
+      <p class="number">步骤三：虚拟机自启设置</p>
+      <p>1）将虚拟机rel7.2设为自动启动</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  autostart  rhel7<span class="sh_number">.2</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//设置自启动</span></li><li>Domain rhel7<span class="sh_number">.2</span> marked as autostarted</li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  dominfo  rhel7<span class="sh_number">.2</span>   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认结果</span></li><li>Id<span class="sh_symbol">:</span>             <span class="sh_symbol">-</span></li><li>Name<span class="sh_symbol">:</span>           rhel7<span class="sh_number">.2</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>Autostart<span class="sh_symbol">:</span>      enable</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  autostart  rhel7.2 						//设置自启动
+Domain rhel7.2 marked as autostarted
+
+[root@kvmsvr ~]# virsh  dominfo  rhel7.2   						//确认结果
+Id:             -
+Name:           rhel7.2
+.. ..
+Autostart:      enable
+.. ..
+</pre></div></div>
+      <p>2）将虚拟机rel7.2取消自动启动</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  autostart  <span class="sh_symbol">--</span>disable  rhel7<span class="sh_number">.2</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//取消自启动</span></li><li>Domain rhel7<span class="sh_number">.2</span> unmarked as autostarted</li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  dominfo  rhel7<span class="sh_number">.2</span>   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认结果</span></li><li>Id<span class="sh_symbol">:</span>             <span class="sh_symbol">-</span></li><li>Name<span class="sh_symbol">:</span>           rhel7<span class="sh_number">.2</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>Autostart<span class="sh_symbol">:</span>      disable</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  autostart  --disable  rhel7.2  			//取消自启动
+Domain rhel7.2 unmarked as autostarted
+
+[root@kvmsvr ~]# virsh  dominfo  rhel7.2   						//确认结果
+Id:             -
+Name:           rhel7.2
+.. ..
+Autostart:      disable
+.. ..
+</pre></div></div>
+      <a name="case4">
+      </a>
+      <h2>4 案例4：xml配置文件的应用</h2>
+      <h3>4.1 问题</h3>
+      <p>本例要求在KVM服务器上通过使用xml文件完成下列任务：</p>
+      <ol class="list">
+        <li>将虚拟机 rhel7.2 改名为 rhel-207
+</li>
+        <li>将虚拟机 rhel-207 复制为 rhel-7
+</li>
+        <li>上述虚拟机的CPU/内存/网络类型保持不变
+</li>
+        <li>但这2个虚拟机有可能会同时运行，不应出现冲突
+</li>
+      </ol>
+      <h3>4.2 方案</h3>
+      <p>KVM虚拟机的xml配置文件也就是通常所说的虚拟机的描述文件，主要用来定义一个虚拟机的名称、UUID、CPU、内存、虚拟磁盘、网卡等各种参数设置。</p>
+      <p>KVM虚拟机的xml配置文件默认位于： /etc/libvirt/qemu/虚拟机名.xml 。</p>
+      <p>修改虚拟机配置的基本思路：</p>
+      <ol class="list">
+        <li>编辑虚拟机配置：virsh  edit  虚拟机名 
+</li>
+        <li>根据需要修改，保存配置结果
+</li>
+      </ol>
+      <h3>4.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：将虚拟机rhel7.2改名为rhel-207</p>
+      <p>1）生成新的UUID字串，并复制备用</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># uuidgen </li><li>76d5dc2c<span class="sh_symbol">-</span>5eef<span class="sh_number">-4e30</span><span class="sh_symbol">-</span>8b6c<span class="sh_symbol">-</span>e58851814f84</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# uuidgen 
+76d5dc2c-5eef-4e30-8b6c-e58851814f84
+</pre></div></div>
+      <p>2）编辑虚拟机rhel7.2的配置</p>
+      <p>调整name、uuid值，保存修改：</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  edit  rhel7<span class="sh_number">.2</span></li><li><span class="sh_symbol">&lt;</span>domain type<span class="sh_symbol">=</span><span class="sh_string">'kvm'</span><span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>name<span class="sh_symbol">&gt;</span>rhel<span class="sh_number">-207</span><span class="sh_symbol">&lt;</span><span class="sh_regexp">/name&gt;  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新名称</li><li>  <span class="sh_symbol">&lt;</span>uuid<span class="sh_symbol">&gt;</span>76d5dc2c<span class="sh_symbol">-</span>5eef<span class="sh_number">-4e30</span><span class="sh_symbol">-</span>8b6c<span class="sh_symbol">-</span>e58851814f84<span class="sh_symbol">&lt;</span><span class="sh_regexp">/uuid&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新UUID值</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  edit  rhel7.2
+&lt;domain type='kvm'&gt;
+  &lt;name&gt;rhel-207&lt;/name&gt;  									//新名称
+  &lt;uuid&gt;76d5dc2c-5eef-4e30-8b6c-e58851814f84&lt;/uuid&gt; 		//新UUID值
+.. ..
+</pre></div></div>
+      <p>3）确认已自动导入的新配置</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel<span class="sh_number">-207</span>                       shut off  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//新名称的虚拟机</span></li><li> <span class="sh_symbol">-</span>     rhel7<span class="sh_number">.2</span>                        shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  list  --all  			
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel-207                       shut off  				//新名称的虚拟机
+ -     rhel7.2                        shut off
+</pre></div></div>
+      <p>4）删除旧名称的虚拟机配置</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  undefine  rhel7<span class="sh_number">.2</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//取消定义虚拟机</span></li><li>Domain rhel7<span class="sh_number">.2</span> has been <span class="sh_predef_var">undefined</span></li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认结果</span></li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel<span class="sh_number">-207</span>                       shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  undefine  rhel7.2  					//取消定义虚拟机
+Domain rhel7.2 has been undefined
+
+[root@kvmsvr ~]# virsh  list  --all 						//确认结果
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel-207                       shut off
+</pre></div></div>
+      <p class="number">步骤二：将虚拟机rhel-207复制为rhel-7</p>
+      <p>1）生成新UUID，并复制备用</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># uuidgen</li><li><span class="sh_number">90908905</span><span class="sh_symbol">-</span>bde4<span class="sh_symbol">-</span>4c4a<span class="sh_symbol">-</span>90b0<span class="sh_symbol">-</span>8a8f5bba1e25</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# uuidgen
+90908905-bde4-4c4a-90b0-8a8f5bba1e25
+</pre></div></div>
+      <p>2）修改导出后的配置（调整名称、UUID、磁盘路径、网卡MAC）</p>
+      <p>修改导出的xml配置文件，调整name、uuid、disk路径、mac地址值：</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  edit  rhel<span class="sh_number">-207</span></li><li><span class="sh_symbol">&lt;</span>domain type<span class="sh_symbol">=</span><span class="sh_string">'kvm'</span><span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>name<span class="sh_symbol">&gt;</span>rhel<span class="sh_number">-7</span><span class="sh_symbol">&lt;</span><span class="sh_regexp">/name&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新名称</li><li>  <span class="sh_symbol">&lt;</span>uuid<span class="sh_symbol">&gt;</span><span class="sh_number">90908905</span><span class="sh_symbol">-</span>bde4<span class="sh_symbol">-</span>4c4a<span class="sh_symbol">-</span>90b0<span class="sh_symbol">-</span>8a8f5bba1e25<span class="sh_symbol">&lt;</span><span class="sh_regexp">/uuid&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新UUID值</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;</span>disk type<span class="sh_symbol">=</span><span class="sh_string">'file'</span> device<span class="sh_symbol">=</span><span class="sh_string">'disk'</span><span class="sh_symbol">&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>driver name<span class="sh_symbol">=</span><span class="sh_string">'qemu'</span> type<span class="sh_symbol">=</span><span class="sh_string">'qcow2'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>source file<span class="sh_symbol">=</span><span class="sh_string">'/var/lib/libvirt/images/rhel-7.qcow2'</span><span class="sh_regexp">/&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新磁盘路径</li><li>      <span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;/</span>disk<span class="sh_symbol">&gt;</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;</span><span class="sh_keyword">interface</span> type<span class="sh_symbol">=</span><span class="sh_string">'network'</span><span class="sh_symbol">&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>mac address<span class="sh_symbol">=</span><span class="sh_string">'52:54:00:91:50:07'</span><span class="sh_regexp">/&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新MAC地址</li><li>      <span class="sh_symbol">&lt;</span>source network<span class="sh_symbol">=</span><span class="sh_string">'default'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>model type<span class="sh_symbol">=</span><span class="sh_string">'virtio'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>address type<span class="sh_symbol">=</span><span class="sh_string">'pci'</span> domain<span class="sh_symbol">=</span><span class="sh_string">'0x0000'</span> bus<span class="sh_symbol">=</span><span class="sh_string">'0x00'</span> slot<span class="sh_symbol">=</span><span class="sh_string">'0x03</span></li><li><span class="sh_string">'</span> <span class="sh_keyword">function</span><span class="sh_symbol">=</span><span class="sh_string">'0x0'</span><span class="sh_symbol">/&gt;</span></li><li>    <span class="sh_symbol">&lt;/</span><span class="sh_keyword">interface</span><span class="sh_symbol">&gt;</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  edit  rhel-207
+&lt;domain type='kvm'&gt;
+  &lt;name&gt;rhel-7&lt;/name&gt; 											//新名称
+  &lt;uuid&gt;90908905-bde4-4c4a-90b0-8a8f5bba1e25&lt;/uuid&gt; 			//新UUID值
+.. ..
+    &lt;disk type='file' device='disk'&gt;
+      &lt;driver name='qemu' type='qcow2'/&gt;
+      &lt;source file='/var/lib/libvirt/images/rhel-7.qcow2'/&gt; 		//新磁盘路径
+      .. ..
+    &lt;/disk&gt;
+.. ..
+    &lt;interface type='network'&gt;
+      &lt;mac address='52:54:00:91:50:07'/&gt; 						//新MAC地址
+      &lt;source network='default'/&gt;
+      &lt;model type='virtio'/&gt;
+      &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x03
+' function='0x0'/&gt;
+    &lt;/interface&gt;
+.. ..
+</pre></div></div>
+      <p>3）确认已自动导入的新配置</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认结果</span></li><li> Id    Name                           State</li><li><span class="sh_symbol">----------------------------------------------------</span></li><li> <span class="sh_symbol">-</span>     rhel<span class="sh_number">-207</span>                       shut off</li><li> <span class="sh_symbol">-</span>     rhel<span class="sh_number">-7</span>                         shut off  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//新虚拟机</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  list  --all 						//确认结果
+ Id    Name                           State
+----------------------------------------------------
+ -     rhel-207                       shut off
+ -     rhel-7                         shut off  				//新虚拟机
+</pre></div></div>
+      <p>4）复制虚拟机磁盘文件</p>
+      <p>为新虚拟机提供一份独立的磁盘文件：</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">cd  </span><span class="sh_symbol">/</span><span class="sh_keyword">var</span><span class="sh_regexp">/lib/</span><span class="sh_normal">libvirt</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span></li><li><span class="sh_symbol">[</span>root@kvmsvr images<span class="sh_symbol">]</span># cp  rhel7<span class="sh_number">.2</span><span class="sh_symbol">.</span>qcow2  rhel<span class="sh_number">-7</span><span class="sh_symbol">.</span>qcow2</li><li><span class="sh_symbol">[</span>root@kvmsvr images<span class="sh_symbol">]</span># ls &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认结果</span></li><li>rhel<span class="sh_number">-7</span><span class="sh_symbol">.</span>qcow2  rhel7<span class="sh_number">.2</span><span class="sh_symbol">.</span>qcow2</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# cd  /var/lib/libvirt/images/
+[root@kvmsvr images]# cp  rhel7.2.qcow2  rhel-7.qcow2
+[root@kvmsvr images]# ls 									//确认结果
+rhel-7.qcow2  rhel7.2.qcow2
+</pre></div></div>
+      <a name="case5">
+      </a>
+      <h2>5 案例5：为虚拟机制作快照备份</h2>
+      <h3>5.1 问题</h3>
+      <p>本例要求使用 qemu-img 及必要的工具，完成下列任务：</p>
+      <ol class="list">
+        <li>将虚拟机 rhel-7 关机
+</li>
+        <li>为虚拟机 rhel-7 的磁盘制作名为 snap1 的快照
+</li>
+        <li>开启并登入虚拟机 rhel-7，在桌面上新建文件 1.txt
+</li>
+        <li>再次关闭虚拟机 rhel-7，还原到快照 snap1
+</li>
+        <li>重新开启并登入虚拟机 rhel-7，检查 1.txt 文件
+</li>
+      </ol>
+      <h3>5.2 方案</h3>
+      <p>KVM虚拟机的快照：通过在虚拟机磁盘镜像内保存不同时间点的状态数据实现备份，在必要时可将虚拟机恢复到指定的快照状态。</p>
+      <p>qemu-img快照管理基本操作：</p>
+      <ul class="list">
+        <li>创建快照：qemu-img  snapshot -c  快照名  qcow2磁盘
+</li>
+        <li>列出快照：qemu-img  snapshot  -l  qcow2磁盘
+</li>
+        <li>恢复快照：qemu-img  snapshot  -a  快照名  qcow2磁盘
+</li>
+        <li>删除快照：qemu-img  snapshot  -d  快照名  qcow2磁盘
+</li>
+      </ul>
+      <h3>5.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：为虚拟机制作快照</p>
+      <p>1）确保虚拟机rhel-7已经关机</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  list  <span class="sh_symbol">--</span>all  <span class="sh_symbol">|</span>  grep  rhel<span class="sh_number">-7</span></li><li> <span class="sh_symbol">-</span>     rhel<span class="sh_number">-7</span>                         shut off</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  list  --all  |  grep  rhel-7
+ -     rhel-7                         shut off
+</pre></div></div>
+      <p>2）为虚拟机rhel-7的磁盘制作快照</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">cd  </span><span class="sh_symbol">/</span><span class="sh_keyword">var</span><span class="sh_regexp">/lib/</span><span class="sh_normal">libvirt</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span></li><li><span class="sh_symbol">[</span>root@kvmsvr images<span class="sh_symbol">]</span># qemu<span class="sh_symbol">-</span>img  snapshot  <span class="sh_symbol">-</span>c snap1  rhel<span class="sh_number">-7</span><span class="sh_symbol">.</span>qcow2 &nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//制作快照</span></li><li><span class="sh_symbol">[</span>root@kvmsvr images<span class="sh_symbol">]</span># qemu<span class="sh_symbol">-</span>img  snapshot  <span class="sh_symbol">-</span>l  rhel<span class="sh_number">-7</span><span class="sh_symbol">.</span>qcow2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//列出快照</span></li><li>Snapshot list<span class="sh_symbol">:</span></li><li>ID        TAG                 VM SIZE                DATE       VM CLOCK</li><li><span class="sh_number">1</span>         snap1                     <span class="sh_number">0</span> <span class="sh_number">2017-01-05</span> <span class="sh_number">15</span><span class="sh_symbol">:</span><span class="sh_number">44</span><span class="sh_symbol">:</span><span class="sh_number">25</span>   <span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">00.000</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# cd  /var/lib/libvirt/images/
+[root@kvmsvr images]# qemu-img  snapshot  -c snap1  rhel-7.qcow2 	//制作快照
+[root@kvmsvr images]# qemu-img  snapshot  -l  rhel-7.qcow2 			//列出快照
+Snapshot list:
+ID        TAG                 VM SIZE                DATE       VM CLOCK
+1         snap1                     0 2017-01-05 15:44:25   00:00:00.000
+</pre></div></div>
+      <p class="number">步骤二：正常使用/更新虚拟机</p>
+      <p>1）启动虚拟机rhel-7</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh start rhel<span class="sh_number">-7</span></li><li>Domain rhel<span class="sh_number">-7</span> started</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh start rhel-7
+Domain rhel-7 started
+</pre></div></div>
+      <p>2）正常登入虚拟机rhel-7，在桌面建立文件1.txt</p>
+      <p>过程略。</p>
+      <p class="number">步骤三：还原快照并检查恢复结果</p>
+      <p>1）关闭虚拟机rhel-7</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh  destroy  rhel<span class="sh_number">-7</span></li><li>Domain rhel<span class="sh_number">-7</span> destroyed</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh  destroy  rhel-7
+Domain rhel-7 destroyed
+</pre></div></div>
+      <p>2）将虚拟机rhel-7的磁盘还原到快照snap1</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr images<span class="sh_symbol">]</span># qemu<span class="sh_symbol">-</span>img  snapshot  <span class="sh_symbol">-</span>a  snap1  rhel<span class="sh_number">-7</span><span class="sh_symbol">.</span>qcow2</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr images]# qemu-img  snapshot  -a  snap1  rhel-7.qcow2
+</pre></div></div>
+      <p>3）重新开启虚拟机rhel-7</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># virsh start rhel<span class="sh_number">-7</span></li><li>Domain rhel<span class="sh_number">-7</span> started</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# virsh start rhel-7
+Domain rhel-7 started
+</pre></div></div>
+      <p>4）正常登入虚拟机rhel-7，检查桌面的文件1.txt</p>
+      <p>因为此文件是在建快照之后才建立的，所以还原快照以后就没有了。</p>
+      <a name="case6">
+      </a>
+      <h2>6 案例6：快建新虚拟机</h2>
+      <h3>6.1 问题</h3>
+      <p>本例要求利用qcow2磁盘特性快建2台新的KVM虚拟机，配置要求如下：</p>
+      <ol class="list">
+        <li>svr7：svr7.tedu.cn，192.168.4.7/24
+</li>
+        <li>pc207： pc207.tedu.cn，192.168.4.207/24
+</li>
+        <li>为上述虚拟机配好网络，确认yum源可用
+</li>
+        <li>从CentOS真机可ssh远程访问这两台虚拟机
+</li>
+      </ol>
+      <h3>6.2 方案</h3>
+      <p>快建新虚拟机的基本思路：</p>
+      <ol class="list">
+        <li>提前准备好一台模板虚拟机（镜像磁盘+xml配置文件）
+</li>
+        <li>基于qcow2磁盘复用技术快建新虚拟机的磁盘
+</li>
+        <li>通过调整模板机的配置快建新虚拟机的xml配置文件
+</li>
+        <li>导入新虚拟机
+</li>
+      </ol>
+      <p>Copy On Write，写时复制技术原理：</p>
+      <ul class="list">
+        <li>直接映射原始盘的数据内容
+</li>
+        <li>当原始盘有修改时，在修改之前将旧数据存入前端盘
+</li>
+        <li>对前端盘的修改不会回写到原始盘
+</li>
+      </ul>
+      <h3>6.3 步骤</h3>
+      <p>实现此案例需要按照如下步骤进行。</p>
+      <p class="number">步骤一：准备模板虚拟机</p>
+      <p>找一台已经装好RHEL7系统、配置好本地yum源、关闭SELinux的虚拟机，提取模板虚拟机磁盘、xml配置文件备用。</p>
+      <p>1）准备磁盘目录、模板虚拟机磁盘文件</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># qemu<span class="sh_symbol">-</span>img <span class="sh_normal">info  </span><span class="sh_symbol">/</span><span class="sh_normal">data</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span>rhel7_muban<span class="sh_symbol">.</span>qcow2 </li><li>image<span class="sh_symbol">:</span> <span class="sh_regexp">/data/im</span><span class="sh_normal">ages</span><span class="sh_symbol">/</span>rhel7_muban<span class="sh_symbol">.</span>qcow2</li><li>file format<span class="sh_symbol">:</span> qcow2</li><li>virtual size<span class="sh_symbol">:</span> 300<span class="sh_function">G</span> <span class="sh_symbol">(</span><span class="sh_number">322122547200</span> bytes<span class="sh_symbol">)</span>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//虚拟机磁盘容量</span></li><li>disk size<span class="sh_symbol">:</span> <span class="sh_number">3</span><span class="sh_symbol">.</span>2G  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//在KVM服务器占用容量</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# qemu-img info  /data/images/rhel7_muban.qcow2 
+image: /data/images/rhel7_muban.qcow2
+file format: qcow2
+virtual size: 300G (322122547200 bytes)  				//虚拟机磁盘容量
+disk size: 3.2G  										//在KVM服务器占用容量
+</pre></div></div>
+      <p>2）准备模板虚拟机配置文件</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">cat  </span><span class="sh_symbol">/</span><span class="sh_normal">data</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span>rhel7_muban<span class="sh_symbol">.</span>xml </li><li><span class="sh_symbol">&lt;</span>domain type<span class="sh_symbol">=</span><span class="sh_string">'kvm'</span><span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>name<span class="sh_symbol">&gt;</span>rhel7<span class="sh_number">.2</span><span class="sh_symbol">&lt;/</span>name<span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>uuid<span class="sh_symbol">&gt;</span>a1992150<span class="sh_symbol">-</span>5cc7<span class="sh_symbol">-</span>e19d<span class="sh_symbol">-</span>20df<span class="sh_symbol">-</span>cd5cea7d8aa2<span class="sh_symbol">&lt;/</span>uuid<span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>memory unit<span class="sh_symbol">=</span><span class="sh_string">'KiB'</span><span class="sh_symbol">&gt;</span><span class="sh_number">2097152</span><span class="sh_symbol">&lt;/</span>memory<span class="sh_symbol">&gt;</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# cat  /data/images/rhel7_muban.xml 
+&lt;domain type='kvm'&gt;
+  &lt;name&gt;rhel7.2&lt;/name&gt;
+  &lt;uuid&gt;a1992150-5cc7-e19d-20df-cd5cea7d8aa2&lt;/uuid&gt;
+  &lt;memory unit='KiB'&gt;2097152&lt;/memory&gt;
+.. ..
+</pre></div></div>
+      <p class="number">步骤二：快建虚拟机svr7</p>
+      <p>1）为虚拟机svr7快速建立前端盘（复用模板机的磁盘数据）</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># qemu<span class="sh_symbol">-</span>img  create  <span class="sh_symbol">-</span>f  qcow2  <span class="sh_symbol">-</span><span class="sh_normal">b  </span><span class="sh_symbol">/</span><span class="sh_normal">data</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span>rhel7_muban<span class="sh_symbol">.</span><span class="sh_normal">qcow2  </span><span class="sh_symbol">/</span><span class="sh_normal">data</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span>svr7<span class="sh_symbol">.</span>qcow2</li><li>Formatting <span class="sh_string">'/data/images/svr7.qcow2'</span><span class="sh_symbol">,</span> fmt<span class="sh_symbol">=</span>qcow2 size<span class="sh_symbol">=</span><span class="sh_number">322122547200</span> backing_file<span class="sh_symbol">=</span><span class="sh_string">'/data/images/rhel7_muban.qcow2'</span> encryption<span class="sh_symbol">=</span>off cluster_size<span class="sh_symbol">=</span><span class="sh_number">65536</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# qemu-img  create  -f  qcow2  -b  /data/images/rhel7_muban.qcow2  /data/images/svr7.qcow2
+Formatting '/data/images/svr7.qcow2', fmt=qcow2 size=322122547200 backing_file='/data/images/rhel7_muban.qcow2' encryption=off cluster_size=65536
+</pre></div></div>
+      <p>2）为虚拟机svr7准备xml配置</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">cp  </span><span class="sh_symbol">/</span><span class="sh_normal">data</span><span class="sh_symbol">/</span><span class="sh_normal">images</span><span class="sh_symbol">/</span>rhel7_muban<span class="sh_symbol">.</span><span class="sh_normal">xml  </span><span class="sh_symbol">/</span><span class="sh_normal">tmp</span><span class="sh_symbol">/</span>svr7<span class="sh_symbol">.</span>xml&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//拷贝配置</span></li><li><span class="sh_symbol">[</span>root@kvmsvr <span class="sh_symbol">~]</span># <span class="sh_normal">vim  </span><span class="sh_symbol">/</span><span class="sh_normal">tmp</span><span class="sh_symbol">/</span>svr7<span class="sh_symbol">.</span>xml &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//修改配置</span></li><li><span class="sh_symbol">&lt;</span>domain type<span class="sh_symbol">=</span><span class="sh_string">'kvm'</span><span class="sh_symbol">&gt;</span></li><li>  <span class="sh_symbol">&lt;</span>name<span class="sh_symbol">&gt;</span>svr7<span class="sh_symbol">&lt;</span><span class="sh_regexp">/name&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新名称</li><li>  <span class="sh_symbol">&lt;</span>uuid<span class="sh_symbol">&gt;</span>b20a1a1c<span class="sh_symbol">-</span>a2de<span class="sh_symbol">-</span>4b2f<span class="sh_symbol">-</span>bb03<span class="sh_symbol">-</span>91a3e36257c7<span class="sh_symbol">&lt;</span><span class="sh_regexp">/uuid&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新UUID值</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;</span>channel type<span class="sh_symbol">=</span><span class="sh_string">'unix'</span><span class="sh_symbol">&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>source mode<span class="sh_symbol">=</span><span class="sh_string">'bind'</span> path<span class="sh_symbol">=</span><span class="sh_string">'/var/lib/libvirt/qemu/channel/t</span></li><li><span class="sh_string">arget/domain-rhel-7/org.qemu.guest_agent.0'</span><span class="sh_regexp">/&gt;  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>改套接字路径</li><li>      <span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;/</span>channel<span class="sh_symbol">&gt;</span></li><li><span style="display:none;">&nbsp;</span></li><li>    <span class="sh_symbol">&lt;</span>disk type<span class="sh_symbol">=</span><span class="sh_string">'file'</span> device<span class="sh_symbol">=</span><span class="sh_string">'disk'</span><span class="sh_symbol">&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>driver name<span class="sh_symbol">=</span><span class="sh_string">'qemu'</span> type<span class="sh_symbol">=</span><span class="sh_string">'qcow2'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>source file<span class="sh_symbol">=</span><span class="sh_string">'/var/lib/libvirt/images/svr7.qcow2'</span><span class="sh_regexp">/&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新磁盘路径</li><li>      <span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;/</span>disk<span class="sh_symbol">&gt;</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li><li>    <span class="sh_symbol">&lt;</span><span class="sh_keyword">interface</span> type<span class="sh_symbol">=</span><span class="sh_string">'network'</span><span class="sh_symbol">&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>mac address<span class="sh_symbol">=</span><span class="sh_string">'52:54:00:11:00:07'</span><span class="sh_regexp">/&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/</span><span class="sh_symbol">/</span>新MAC地址</li><li>      <span class="sh_symbol">&lt;</span>source network<span class="sh_symbol">=</span><span class="sh_string">'default'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>model type<span class="sh_symbol">=</span><span class="sh_string">'virtio'</span><span class="sh_symbol">/&gt;</span></li><li>      <span class="sh_symbol">&lt;</span>address type<span class="sh_symbol">=</span><span class="sh_string">'pci'</span> domain<span class="sh_symbol">=</span><span class="sh_string">'0x0000'</span> bus<span class="sh_symbol">=</span><span class="sh_string">'0x00'</span> slot<span class="sh_symbol">=</span><span class="sh_string">'0x03</span></li><li><span class="sh_string">'</span> <span class="sh_keyword">function</span><span class="sh_symbol">=</span><span class="sh_string">'0x0'</span><span class="sh_symbol">/&gt;</span></li><li>    <span class="sh_symbol">&lt;/</span><span class="sh_keyword">interface</span><span class="sh_symbol">&gt;</span></li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@kvmsvr ~]# cp  /data/images/rhel7_muban.xml  /tmp/svr7.xml	//拷贝配置
+[root@kvmsvr ~]# vim  /tmp/svr7.xml 							//修改配置
+&lt;domain type='kvm'&gt;
+  &lt;name&gt;svr7&lt;/name&gt; 											//新名称
+  &lt;uuid&gt;b20a1a1c-a2de-4b2f-bb03-91a3e36257c7&lt;/uuid&gt; 			//新UUID值
+.. ..
+    &lt;channel type='unix'&gt;
+      &lt;source mode='bind' path='/var/lib/libvirt/qemu/channel/t
+arget/domain-rhel-7/org.qemu.guest_agent.0'/&gt;  					//改套接字路径
+      .. ..
+    &lt;/channel&gt;
+
+    &lt;disk type='file' device='disk'&gt;
+      &lt;driver name='qemu' type='qcow2'/&gt;
+      &lt;source file='/var/lib/libvirt/images/svr7.qcow2'/&gt; 		//新磁盘路径
+      .. ..
+    &lt;/disk&gt;
+.. ..
+    &lt;interface type='network'&gt;
+      &lt;mac address='52:54:00:11:00:07'/&gt; 						//新MAC地址
+      &lt;source network='default'/&gt;
+      &lt;model type='virtio'/&gt;
+      &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x03
+' function='0x0'/&gt;
+    &lt;/interface&gt;
+.. ..
+</pre></div></div>
+      <p>3）定义新虚拟机svr7</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@room9pc00 <span class="sh_symbol">~]</span># virsh  <span class="sh_normal">define  </span><span class="sh_symbol">/</span><span class="sh_normal">tmp</span><span class="sh_symbol">/</span>svr7<span class="sh_symbol">.</span>xml </li><li>定义域 svr7（从 <span class="sh_regexp">/tmp/</span>svr7<span class="sh_symbol">.</span>xml）</li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@room9pc00 ~]# virsh  define  /tmp/svr7.xml 
+定义域 svr7（从 /tmp/svr7.xml）
+</pre></div></div>
+      <p>4）为虚拟机svr7配置主机名、IP地址</p>
+      <p>开启虚拟机svr7，使用root用户登入系统。</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@svr7 <span class="sh_symbol">~]</span># <span class="sh_normal">vim  </span><span class="sh_symbol">/</span><span class="sh_normal">etc</span><span class="sh_symbol">/</span>hostname  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//配置主机名</span></li><li>svr7<span class="sh_symbol">.</span>tedu<span class="sh_symbol">.</span>cn</li><li><span class="sh_symbol">[</span>root@svr7 <span class="sh_symbol">~]</span># nmcli  connection  modify  eth0  ipv4<span class="sh_symbol">.</span>method  manual  ipv4<span class="sh_symbol">.</span>addresses  <span class="sh_number">192.168.4.7</span><span class="sh_symbol">/</span><span class="sh_number">24</span>  connection<span class="sh_symbol">.</span>autoconnect  yes &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//配置IP地址</span></li><li><span class="sh_symbol">[</span>root@svr7 <span class="sh_symbol">~]</span># nmcli  connection  up  eth0  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//激活连接</span></li><li>成功激活的连接（D<span class="sh_symbol">-</span>Bus 激活路径：<span class="sh_regexp">/org/</span><span class="sh_normal">freedesktop</span><span class="sh_symbol">/</span><span class="sh_normal">NetworkManager</span><span class="sh_symbol">/</span><span class="sh_normal">ActiveConnection</span><span class="sh_symbol">/</span><span class="sh_number">8</span>）</li><li><span style="display:none;">&nbsp;</span></li><li><span class="sh_symbol">[</span>root@svr7 <span class="sh_symbol">~]</span># ifconfig  eth0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//确认配置结果</span></li><li>eth0<span class="sh_symbol">:</span> flags<span class="sh_symbol">=</span><span class="sh_number">4163</span><span class="sh_symbol">&lt;</span>UP<span class="sh_symbol">,</span>BROADCAST<span class="sh_symbol">,</span>RUNNING<span class="sh_symbol">,</span>MULTICAST<span class="sh_symbol">&gt;</span>  mtu <span class="sh_number">1500</span></li><li>        inet <span class="sh_number">192.168.4.7</span>  netmask <span class="sh_number">255.255.255.0</span>  broadcast <span class="sh_number">192.168.4.255</span></li><li>        inet6 fe80<span class="sh_symbol">::</span>20c<span class="sh_symbol">:</span>29ff<span class="sh_symbol">:</span>fe5e<span class="sh_symbol">:</span>f686  prefixlen <span class="sh_number">64</span>  scopeid <span class="sh_number">0x20</span><span class="sh_symbol">&lt;</span>link<span class="sh_symbol">&gt;</span></li><li>        ether <span class="sh_number">52</span><span class="sh_symbol">:</span><span class="sh_number">54</span><span class="sh_symbol">:</span><span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">11</span><span class="sh_symbol">:</span><span class="sh_number">00</span><span class="sh_symbol">:</span><span class="sh_number">07</span>  txqueuelen <span class="sh_number">1000</span>  <span class="sh_symbol">(</span>Ethernet<span class="sh_symbol">)</span></li><li>        RX packets <span class="sh_number">112143</span>  bytes <span class="sh_number">9388455</span> <span class="sh_symbol">(</span><span class="sh_number">8.9</span> MiB<span class="sh_symbol">)</span></li><li>        RX errors <span class="sh_number">0</span>  dropped <span class="sh_number">0</span>  overruns <span class="sh_number">0</span>  frame <span class="sh_number">0</span></li><li>        TX packets <span class="sh_number">507844</span>  bytes <span class="sh_number">771354289</span> <span class="sh_symbol">(</span><span class="sh_number">735.6</span> MiB<span class="sh_symbol">)</span></li><li>        TX errors <span class="sh_number">0</span>  dropped <span class="sh_number">0</span> overruns <span class="sh_number">0</span>  carrier <span class="sh_number">0</span>  collisions <span class="sh_number">0</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@svr7 ~]# vim  /etc/hostname  					//配置主机名
+svr7.tedu.cn
+[root@svr7 ~]# nmcli  connection  modify  eth0  ipv4.method  manual  ipv4.addresses  192.168.4.7/24  connection.autoconnect  yes 		//配置IP地址
+[root@svr7 ~]# nmcli  connection  up  eth0  			//激活连接
+成功激活的连接（D-Bus 激活路径：/org/freedesktop/NetworkManager/ActiveConnection/8）
+
+[root@svr7 ~]# ifconfig  eth0 							//确认配置结果
+eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 192.168.4.7  netmask 255.255.255.0  broadcast 192.168.4.255
+        inet6 fe80::20c:29ff:fe5e:f686  prefixlen 64  scopeid 0x20&lt;link&gt;
+        ether 52:54:00:11:00:07  txqueuelen 1000  (Ethernet)
+        RX packets 112143  bytes 9388455 (8.9 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 507844  bytes 771354289 (735.6 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</pre></div></div>
+      <p class="number">步骤三：快建虚拟机pc207</p>
+      <p>操作与步骤二类似，此处略。</p>
+      <p class="number">步骤四：快建虚拟机的运行测试</p>
+      <p>1）启动两台虚拟机svr7、pc207，均可正常运行</p>
+      <p>2）从svr7可ping通pc207</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@svr7 <span class="sh_symbol">~]</span># ping  <span class="sh_number">192.168.4.207</span></li><li>PING <span class="sh_number">192.168.4.207</span> <span class="sh_symbol">(</span><span class="sh_number">192.168.4.207</span><span class="sh_symbol">)</span> <span class="sh_number">56</span><span class="sh_symbol">(</span><span class="sh_number">84</span><span class="sh_symbol">)</span> bytes of data<span class="sh_symbol">.</span></li><li><span class="sh_number">64</span> bytes from <span class="sh_number">192.168.4.207</span><span class="sh_symbol">:</span> icmp_seq<span class="sh_symbol">=</span><span class="sh_number">1</span> ttl<span class="sh_symbol">=</span><span class="sh_number">64</span> time<span class="sh_symbol">=</span><span class="sh_number">0.392</span> ms</li><li><span class="sh_number">64</span> bytes from <span class="sh_number">192.168.4.207</span><span class="sh_symbol">:</span> icmp_seq<span class="sh_symbol">=</span><span class="sh_number">2</span> ttl<span class="sh_symbol">=</span><span class="sh_number">64</span> time<span class="sh_symbol">=</span><span class="sh_number">0.369</span> ms</li><li><span class="sh_symbol">..</span> <span class="sh_symbol">..</span></li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@svr7 ~]# ping  192.168.4.207
+PING 192.168.4.207 (192.168.4.207) 56(84) bytes of data.
+64 bytes from 192.168.4.207: icmp_seq=1 ttl=64 time=0.392 ms
+64 bytes from 192.168.4.207: icmp_seq=2 ttl=64 time=0.369 ms
+.. ..
+</pre></div></div>
+      <p>3）从CentOS真机可ssh远程访问这两台虚拟机</p>
+      <div class="snippet-container" style="undefined;"><div class="sh_acid snippet-wrap"><div class="snippet-menu sh_sourceCode" style="display:none;"><pre style="display: none;"><a class="snippet-copy sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#" style="display: none;">copy</a><a class="snippet-text sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">text</a><a class="snippet-window sh_url" href="http://tts.tmooc.cn/ttsPage/LINUX/NSD_V05/SERVICES/DAY01/CASE/01/index.html#">pop-up</a></pre></div><pre class="code sh_javascript snippet-formatted sh_sourceCode"><ol class="snippet-num"><li><span class="sh_symbol">[</span>root@room9pc00 <span class="sh_symbol">~]</span># ssh  <span class="sh_symbol">-</span>X  root@<span class="sh_number">192.168.4.7</span> </li><li>root@<span class="sh_number">192.168.4.7</span><span class="sh_string">'s password:   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//验证svr7的root密码</span></li><li><span class="sh_string">Last login: Sun Mar 26 11:30:35 2017 from 192.168.4.254</span></li><li><span class="sh_string">[root@svr7 ~]# exit</span></li><li><span class="sh_string">[root@room9pc00 ~]# ssh  -X  root@192.168.4.207 </span></li><li><span class="sh_string">root@192.168.4.207'</span>s password<span class="sh_symbol">:</span>   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sh_comment">//验证pc207的root密码</span></li><li>Last login<span class="sh_symbol">:</span> Sun Mar <span class="sh_number">26</span> <span class="sh_number">11</span><span class="sh_symbol">:</span><span class="sh_number">32</span><span class="sh_symbol">:</span><span class="sh_number">35</span> <span class="sh_number">2017</span> from <span class="sh_number">192.168.4.254</span></li><li><span class="sh_symbol">[</span>root@pc207 <span class="sh_symbol">~]</span># exit</li><li><span class="sh_symbol">[</span>root@room9pc00 <span class="sh_symbol">~]</span># </li></ol></pre><pre class="snippet-textonly sh_sourceCode" style="display:none;">[root@room9pc00 ~]# ssh  -X  root@192.168.4.7 
+root@192.168.4.7's password:   						//验证svr7的root密码
+Last login: Sun Mar 26 11:30:35 2017 from 192.168.4.254
+[root@svr7 ~]# exit
+[root@room9pc00 ~]# ssh  -X  root@192.168.4.207 
+root@192.168.4.207's password:   						//验证pc207的root密码
+Last login: Sun Mar 26 11:32:35 2017 from 192.168.4.254
+[root@pc207 ~]# exit
+[root@room9pc00 ~]# 
+</pre></div></div>
+    </div>
+  
+</body></html>

@@ -1,4 +1,5 @@
 
+一、搭建数据库服务器
 
 八、数据读写分离
 九、部署mysql集群
@@ -406,16 +407,20 @@ default-storage-engine=myisam
 > alter table 表 engine=存储引擎名；
 
 1.6常用存储引擎的特点
-
+————innodb特点：
+支持事务  、 事务回滚   、行级锁  、外键
+存储方式： 一个表对应2个存储文件
+                 表名.frm    表结构
+                 表名.ibd    数据和索引
 
 
 ————myisam特点
 不支持事物、事物回滚、外键
 支持表级锁
 存储方式：一个表对应3个存储文件
-	表名.frm   表结构
-	表名.MYD   数据
- 	表名.MYI   索引
+		表名.frm   表结构
+		表名.MYD   数据
+	 	表名.MYI   索引
 
 ——事物：对数据库服务的访问过程（连接数据库服务器 操作数据 断开连接）
 ——事物回滚：在事物执行过程中，任何一步操作失败，都会恢复之前的所有操作。
@@ -703,7 +708,7 @@ skip-grant-tables
 # mysql
 > select host,user,authentication_string from mysql.user;
 > update mysql.user set authentication_string=password("abc123") where user='root';
-> flush privileges;
+> flush privileges;(手动修改配置值，要加)
 >quit
 
 # vim /etc/my.cnf
@@ -742,12 +747,22 @@ validate_password_length=6
 域名				%.tedu.cn（要求数据库服务器可以解析主机名）
 
 
+
 3.3用户授权命令的语法格式
 For example：允许客户端245主机可以使用root连接，连接密码是123456，连接后的访问权限是所有库表完全访问权限，且有授权权限。
 
 > grant 权限列表 on 数据库名 to 用户名@“客户端地址” identified by "密码" 【with grant option】（新增用户是否拥有创建新用户权限）；
 > grant all on *.* to root@1"192.168.4.254" identified by "123456" with grant option;
 > grant all on *.* to student@"%" identified by "123456" with grant option;
+——授权用户不是有授权权限就能授权的，要同时拥有mysql的insert权限才可以，且授权时的权限要小于等于自身的权限
+——新增权限给用户
+> grant 权限列表 on 库.表 to 用户名@‘客户端地址’；
+> grant insert on mysql.* to bbsuer@'%';
+
+——授权用户连接数据库服务器修改自己的登录密码
+> set password=password("密码")
+——管理员重置授权用户的登录密码
+> set password for 用户名@'客户端地址'=password（“密码”）；
 
 ——显示连接用户名和IP地址
 > select user();
@@ -755,42 +770,201 @@ For example：允许客户端245主机可以使用root连接，连接密码是12
 > select @@hostname;
 ——登录用户的访问权限
 > show grants;
+——插可能已有用户的权限授权
+> show grants for 用户名@"客户端地址" ;
+> show grants for admin@"%" ;
 
-
- 
 3.4撤销用户权限命令的语法格式
+——撤销的是用户的访问权限
+——用户对数据库有过授权才可以撤销
 > revoke 权限列表 on 数库名 from 用户名@“客户端地址”；
+> revoke grant option on *.* from 'root'@'192.168.4.254';
 
+——删除用户
+> drop  user 'root'@'192.168.4.254';
 3.5数据库服务器使用授权库存储授权信息
 ——虚拟库				indormation_schema 不占用物理存储空间，数机存储在物理内存里，存储表的
-——授权库 存储授权信息 mysql库
+——授权库 存储授权信息 		mysql库
 ——存储授权用户的名及访问权限	user
 ——存储授权用户对服务器上对库的权限	db 
-——					table_priv 
+——存储授权用户对表的访问权限	table_priv 
 ——存储授权用户对字段的访问权限	clomoun_priv
 
 
 3.6工作中如何授权
+——给管理者授权 给完全权限且有授权权限
+——给使用者授权 只给对存储数据的库有select和insert的权限
+
+###############################################################
+
+day05 数据备份与恢复
+
+1、数据备份相关概念
+1.1数据备份的目的
+——数据被误删除或设备损坏导致数据丢失，时备份文件恢复数据。
+
+
+1.2数据备份方式
+物理备份：指定备份库和表对应的文件
+# cp -r /var/lib/mysql /opt/mysql.bak
+# chown -R mysql:mysql /opt/mysql.bak
+
+逻辑备份：在执行备份命令时，根据备份的库表及数据生成对应的sql命令，把sql存储到指定的文件里。
+
+
+1.3数据备份策略
+——备份新产生数据（差异备份和增量备份，都备份新产生的数据）
+——完全备份: 备份所有数据（一个表、一个库、一台数据库的所有数据）
+——差异备份：备份自完全备份后，所有新产生的数据
+——增量备份：备份自上次备份后，所有新产生的数据
+
+1.4工作中如何对数据做备份
+
+1.4.1选择备份策略：
+——完全备份+差异备份（周一完全，其他差异）
+——完全备份+增量备份（周一完全，其他增量）
+
+1.4.2数据备份时间
+——数据服务器访问量少的时候执行备份
+
+1.4.3数据备份频率
+——根据数据产生量，决定备份频率
+
+1.4.4备份文件的命名
+——库名-日期.sql
+
+1.4.5备份文件的储存设置
+——准备独立的存储备份文件
+
+1.4.6如何执行备份
+——使用周期性计划任务执行本机脚本
+
+2、完全备份与完全恢复
+——完全备份数据命令
+# mysqldump -uroot -p密码 数据库名 > 目录名/文件名.sql
+
+——备份和恢复数据会给表加写锁
+——数据库名的表达方式
+备份一台数据库上的所有数据 	--all-databases / -A
+备份一章表的所有说有数据 	库名 表名
+# mysqldump -uroot -p1234566 studdb t3 > studb.sql
+
+备份一个库的所有数据		库名
+# mysqldump -uroot -p1234566 studdb > studb.sql
+把多个库的所有数据备份到一个文件里	-B 库名1 库名N
+
+——完全恢复数据命令
+# mysql -uroot -p密码 数据库名 < 目录名/文件名.sql
+# mysql -uroot -p123456 db3 < /mydatabak/db3-user3.sql
+
+——使用source命令恢复数据
+> create database bbsdb;
+> use bbsdb；
+> source /mydatabak/db3-user3.sql；
+
+——编写脚本实现周一自动完全备份
+# cat /mysql-bak.sh
+#!/bin/bash
+day=`date +%F`
+if [ ! -d  /dbbak ];then
+mkdir /dbbak
+fi
+mysqldump -uroot -p123456 gamedb > /dbbak/${day}_gamedb.sql
+
+# crontab -e
+00 18 * * 1 。/mysql-bak.sh
+
+3、增量备份与增量恢复
+3.1启动mysql数据库服务的binlog日志文件，实现实时增量备份
+——日志binlog
+是mysql数据库服务日志文件的一种，默认没有启用，记录除查询之外的sql命令
+查询命令包括 select、show、desc；
+写的命令：insert、update、delete、create、drop
+
+——启用binlog日志
+# vim /etc/my.cnf
+[mysqld]
+server_id=51
+log-bin
+binlog-format="mixed"   
+
+# systemctl restart mysqld
+
+——查看binlog日志文件内容
+# ls /var/mysql/mysql-bin.000001 (大于500M自动生成000002)
+# cat /var/lib/mysql/mysql-bin.index
+# mysqlbinlog /var/lib/mysql/mysql51-bin.000001
+——自定义binlog日志文件存储的位置和文件名称
+
+# mkdir /mylog
+# chown mysql /mylog
+# vim /etc/my.cnf
+[mysqld]
+server_id=51
+log-bin=/mylog/mysql  (不写默认mysql根目录)
+
+# systemctl restart mysqld
+# ls /mylog/mysql.000001
 
 
 
+——手动生成新的日志文件方法
+*默认日志文件大于500M时自动创建新日志文件
+> flush logs;
+# mysql -uroot -p123456 -e "flush logs" (-e 在命令行执行数据库命令)
+> mysqldump -uroot -p123456 --flush-logs db3  > 目录/xx.sql  (生成新的备份文件)
 
 
+——删除已有的binlog日志文件
+> reset master; (全部初始化)
+> purge master logs to "binlog文件名" （删除数字前的）
+> purge master logs to "mysql.000005";
+
+——日志文件记录sql命令的方式
+记录方式有2种：	
+	指定偏移量范围选项 
+	--start-position=偏移量 
+	--stop-position=偏移量的值
+
+	指定时间范围选项   
+	--start-datetime=“yyyy-mm-dd hh:mm:ss” 
+	--stop-datetime=“yyyy-mm-dd hh:mm:ss”
+
+读取日志文件指定范围内的sql命令恢复数据
+
+——使用binlog日志恢复数据
+# mysqlbinlog [选项] 日志文件名 | mysql -uroot -p123456
+# mysqlbinlog mysql.000002 | mysql -uroot -p123456
 
 
+——查看当前数据库记录sql命令的文件及偏移量
+> show master status;
 
+3.2安装第三方软件提供热备份命令，对数据做增量备份
+——软件介绍 Percona 开源软件 在线热备不锁表,适用于生产环境
+——安装软件
+# yum  localinstall libev-4.15-1.el6.rf.x86_64.rpm
+# yum  install percona-xtrabackup-24-2.4.7-1.el7.x86_64.rpm
+# rpm -ql percona-xtrabackup-24
 
+——提供2个备份命令
+/usr/bin/innobackupex
+集成了命令xtrabackup,所以
 
+/usr/bin/xtrabackup
 
+常用选项
+【--host 主机名】
+--password 密码
+--user 用户名
+--databases="库1 库N 库.表" (不指定就备份所有)
+--no-timestamp (不生成时间目录)
 
-
-
-
-
-
-
-
-
+innobackupex 完全备份与恢复
+# innobackupex --user root --password 123456 --databese="mysql performance_schema sys" /allbak 
+恢复
+# innobackupex --user root -password 123456 --copy-back /allbak
+# chown -R mysql:mysql 还原目录
 
 
 
