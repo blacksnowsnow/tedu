@@ -1,6 +1,8 @@
 
 一、搭建数据库服务器
-
+二、
+六、数据备份与恢复
+七、mysql主从同步
 八、数据读写分离
 九、部署mysql集群
 十、mysql调优
@@ -761,6 +763,7 @@ For example：允许客户端245主机可以使用root连接，连接密码是12
 
 ——授权用户连接数据库服务器修改自己的登录密码
 > set password=password("密码")
+
 ——管理员重置授权用户的登录密码
 > set password for 用户名@'客户端地址'=password（“密码”）；
 
@@ -840,6 +843,11 @@ day05 数据备份与恢复
 ——使用周期性计划任务执行本机脚本
 
 2、完全备份与完全恢复
+——完全备份的缺点?
+	数据量大时，备份和恢复数据都受磁盘I/O
+	备份和恢复数据会给表加写锁
+	使用完全备份文件恢复数据，只能把数据恢复到备份时的状态。完全备份后新
+
 ——完全备份数据命令
 # mysqldump -uroot -p密码 数据库名 > 目录名/文件名.sql
 
@@ -884,8 +892,8 @@ mysqldump -uroot -p123456 gamedb > /dbbak/${day}_gamedb.sql
 ——启用binlog日志
 # vim /etc/my.cnf
 [mysqld]
-server_id=51
-log-bin
+server_id=51     （数字 1-255 不能于其他人冲突）
+log-bin【=目录名/文件名】
 binlog-format="mixed"   
 
 # systemctl restart mysqld
@@ -902,6 +910,7 @@ binlog-format="mixed"
 [mysqld]
 server_id=51
 log-bin=/mylog/mysql  (不写默认mysql根目录)
+binlog-format="mixed"
 
 # systemctl restart mysqld
 # ls /mylog/mysql.000001
@@ -966,7 +975,187 @@ innobackupex 完全备份与恢复
 # innobackupex --user root -password 123456 --copy-back /allbak
 # chown -R mysql:mysql 还原目录
 
+3.3 innobackupex增量备份
 
+——先要有一次完全备份 存放目录 /fullbak
+--incremental 目录名 		增量备份
+--incremental-basedir=目录名 	增量
+
+# innobackupex --user root --password 123456 --databases="gamedb mysql performance_schema sys"  /fullbak --no-timestamp
+
+——执行增量备份 存放目录/new1bak
+# innobackupex --user root --password 123456 --databases="gamedb mysql performance_schema sys"  --incremental /new1dir --incremental-basedir=/fullbak  --no-timestamp
+
+——执行增量备份 存放目录/new2bak
+# innobackupex --user root --password 123456 --databases="gamedb mysql performance_schema sys" --incremental /new2dir --incremental-bsesfir=/new1bak
+--no-timestamp
+
+3.4 恢复增量数据
+——常用选项
+--apply-log 		准备恢复数据
+--redo-only			合并日志
+--incremental-dir=目录名 	增量恢复数据时，指定备份目录名称
+--copy-back 		恢复数据
+--export			导出表信息
+import			导入表空间
+
+
+# rm -rf /var/lib/mysql
+# mkdir /var/lib/mysql
+
+——准备恢复数据
+# innobackupex --user root --password 123456 --databases="gamedb mysql performance_schema sys" --apply-log --redo-only /fullbak
+
+——合并日志（与完全备份合并）
+# innobackupex --user root --password 123456 --databaes="gamedb mysql performance_schema sys"   --apply-log --redo-only /fullbak --incremental-dir=/new1dir
+# innobackupex --user root --password 123456 --databaes="gamedb mysql performance_schema sys"   --apply-log --redo-only /fullbak --incremental-dir=/new1dir
+ 
+——拷贝备份文件到数据库目录
+# innobackupex --user root --password 123456 --databaes="gamedb mysql performance_schema sys" --copy-back /fullbank
+
+——修改文件的所有者/组mysql
+# chown -R mysql:mysql /var/lib/mysql
+
+——重启数据库服务
+# systemctl restart mysqld
+
+3.5恢复完全备份中的单个表
+> create database studb;
+> create table studb.a(id char(1));
+> create table studb.b(id char(1));
+
+——完全备份
+# innobackupex --user root --password 123456 --database="studb" /allbakstudb --no-timestamp
+
+> drop table studb.a;
+
+——按照备份时的表结构创建删除的表
+> create table studb.a(id char(1));
+
+——删除创建的信息的表空间文件
+> alter table studb.a discard tablespace;
+
+——使用备份文件导出表信息
+# innobackupex --user root --password 123456 --databeses="studb" --apply-log --export /allbakstudb
+
+——把导出的表信息文件，拷贝到对应的数据库目录下，并修改所有者和组为mysql
+# cp /allbakstudb/studb/a.{cfg,exp,ibd} /var/lib/mysql/studb/
+# chown mysql:mysql /var/lib/mysql/studb/a.*
+
+——导入表空间
+> alter table studb.a  import tablespace;
+
+# rm -rf /var/lib/mysql/studb/a.cfg
+# rm -rf /var/lib/mysql/studb/a.exp
+
+——查看记录
+> select * from studb.a;
+
+事物日志文件
+LSN 日志序列号
+
+增量备份的工作过程
+每一个备份目录下，都有记录备份当前目录备份数据信息的配置文件
+# cat 备份目录名/xtrabackup_checkpints(记录备份类型)
+
+
+
+###########################################################################
+
+mysql-data06 部署主从同步
+1、 mysql主从同步
+主：正在被客户端访问的数据库，被称为主库服务器。
+从：自动同步主库上的数据库服务器，被称为从库服务器。
+2、配置mysql主从同步
+2.1 拓扑图
+数据库服务器192.168.4.51做主库
+
+数据库服务器192.168.4.52做从库
+
+2.2环境准备
+主从同步未配置之前，要保证从库上要有主库上的数据。
+
+2.3配置mysql主从同步
+2.3.1配置主库
+——做用户授权
+> grant replication slave on *.* to repluser@"192.168.4.52" identified by "123456";
+——启用binlog日志
+vim /etc/my.cnf
+[mysqld]
+server_id=51
+log-bin=master51
+binlog-format="mixed"
+
+——查看正在使用binlog日志信息
+> show master status;
+
+2.3.2配置从库
+——验证主库的用户授权
+# mysql -h192.168.4.51 -urepliuser -p123456
+——指定server_id
+# vim  /etc/my.cnf
+[mysqld]
+server_id=52
+
+——数据库管理源本地登录，指定主数据库服务器的信息
+> change master to 
+master_host="主库ip地址"，
+master_user="主库授权用户名"，
+master_password="主库授权密码"
+master_log_file="master51.000001"
+master_log_pos=154;
+> change master to master_host="192.168.4.51",master_user="repluser", master_passowrd="123456", master_log_file="master51.000001", master_log_pos=154;
+
+——启动slave进程
+> start slave;
+——查看进程状态信息
+> show slave status;
+2.4在客户端测试主从同步配置
+2.4.1在主库服务器上添加访问数据时，使用连接用户
+2.4.2客户端使用主库的授权用户，连接主库服务器，建库表插入记录
+2.4.3在从库本机，使用管理登录查看是否有和主库一样库表记录及授权用户
+# mysql -uroot -p123456
+> select * from 库.表;
+2.4.4客户端使用主库的授权用户，连接从库服务器，也可以看到新建的库表及记录
+
+
+
+3、mysql主从同步的工作原理
+从库数据库目录下的文件：
+master.info 记录主库信息
+主机名-relay-bin.xxx 中继日志文件，记录主库上执行过的sql命令
+主机名-relay-bin.indext 索引文件，记录当前已有的中继日志文件
+relay-log.into 中继日志文件，记录当前使用的中继日志信息
+——查看当前数据库服务器上正在执行的程序
+> show processlist;
+
+
+从库IO线程和SQL线程的作用
+IO线程 把主库binlog日志里的sql命令记录到本机的中继日志文件
+SQL线程 执行本机中继日志文件里的sql命令，把数据写进本机。
+
+IO线程报错原因：从库连接主库失败（ping、grant、firewallld、selinux）
+		从库指定主库的日志信息错误（日志名 偏移量）
+Last_IO_Error:报错信息
+修改步骤：
+> stop slave;
+> change master to 选项=“值”；
+> start slave;
+SQL线程报错原因：执行本机中继日志文件里的sql命令，用到库或表在本机不存在。
+
+——设置从库暂时不同步，在从库上把slave进程停止
+> stop slave;
+——把从库恢复成独立的数据库服务器
+# rm -rf /var/lib/mysql/master.info
+# systmectl restart mysqld
+# rm -rf 主机名-relay-bin.xxx 主机名-relay-bin.index relay-log.info
+
+4.mysql主从同步机构模式
+一主一从 **
+一主多从 **
+主从从
+主主结构（又称作互为主从）
+5、mysql主从同步常用数据参数
 
 
 
