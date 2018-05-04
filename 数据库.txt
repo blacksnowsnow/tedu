@@ -484,14 +484,7 @@ secure_file_priv="/mysqldata"
 
 
 ——创建存储数据表
-> username  char(50),
-password char(1),
-uid int(2),
-git int(2),
-comment char(100),
-home char(50),
-shell char(50),
-index (username));
+> create table passwd(username  char(50),password char(1),uid int(2),git int(2),comment char(100),home char(50),shell char(50),index (username));
 > desc db3.usertab;
 > select * from db3.usertab;
 
@@ -630,7 +623,6 @@ mysql-day04
 1.2复制表结构（复制的内容有sql查询命令决定）
 > create table user3 select * from usertab where 1=2(第一行等与第二行 X );
 
-
 1.3嵌套查询 
 ——定义：把内层的查询结果作为外层查询的查询条件
 > select 字段名列表 from  库.名 条件（ select 字段名列表 from  库.名 条件 ）；
@@ -757,6 +749,7 @@ For example：允许客户端245主机可以使用root连接，连接密码是12
 > grant all on *.* to root@1"192.168.4.254" identified by "123456" with grant option;
 > grant all on *.* to student@"%" identified by "123456" with grant option;
 ——授权用户不是有授权权限就能授权的，要同时拥有mysql的insert权限才可以，且授权时的权限要小于等于自身的权限
+
 ——新增权限给用户
 > grant 权限列表 on 库.表 to 用户名@‘客户端地址’；
 > grant insert on mysql.* to bbsuer@'%';
@@ -853,7 +846,7 @@ day05 数据备份与恢复
 
 ——备份和恢复数据会给表加写锁
 ——数据库名的表达方式
-备份一台数据库上的所有数据 	--all-databases / -A
+备份一台数据库上的所有数据 	--all-databases 
 备份一章表的所有说有数据 	库名 表名
 # mysqldump -uroot -p1234566 studdb t3 > studb.sql
 
@@ -949,6 +942,8 @@ binlog-format="mixed"
 ——查看当前数据库记录sql命令的文件及偏移量
 > show master status;
 
+###################################################################################################
+
 3.2安装第三方软件提供热备份命令，对数据做增量备份
 ——软件介绍 Percona 开源软件 在线热备不锁表,适用于生产环境
 ——安装软件
@@ -969,11 +964,18 @@ binlog-format="mixed"
 --databases="库1 库N 库.表" (不指定就备份所有)
 --no-timestamp (不生成时间目录)
 
+
+
 innobackupex 完全备份与恢复
-# innobackupex --user root --password 123456 --databese="mysql performance_schema sys" /allbak 
-恢复
-# innobackupex --user root -password 123456 --copy-back /allbak
-# chown -R mysql:mysql 还原目录
+# innobackupex --user root --password 123456 --databese="mysql performance_schema sys" /allbak  --no-timestamp
+——恢复
+# rm   -rf  /var/lib/mysql
+# mkdir  /var/lib/mysql
+# innobackupex  --user root --password 654321  --copy-back  /allbak 
+# chown  -R  mysql:mysql  /var/lib/mysql
+#  systemctl  restart  mysqld
+#mysql   -uroot  -p654321
+
 
 3.3 innobackupex增量备份
 
@@ -1155,40 +1157,322 @@ SQL线程报错原因：执行本机中继日志文件里的sql命令，用到�
 一主多从 **
 主从从
 主主结构（又称作互为主从）
+
 5、mysql主从同步常用数据参数
+——主库服务器在配置文件my.cnf使用的参数
+# vim /etc/my.cnf
+[mysqld]
+binlog_do_db=库名列表   （只允许同步的库）
+binlog_Ignore_db=库名列表，库名N   （不允许同步的库）
+
+从库服务器在配置文件my.cnf使用的参数
+# vim /etc/my.cnf
+[mysqld]
+log_slave_updates
+relay_log=中继日志文件名
+replicate_do_db=库名列表  （只同步的库）
+replicate_ignore_db=库名列表  （指不同步的库）
+
+# systemctl restart mysqld
+
+配置mysql主从从结构
+主库 192.168.4.51
+从库 192.168.4.52 （做51主机从库）
+从库 192.168.4.53 （做53主机从库）
+要求：客户端访问主库51时创建库表记录在52和53数据库服务器都可以看到
+
+配置步骤：
+一、环境准备
+主从同步未配置之前
 
 
+二、配置主从同步
+2.1配置主库51
+用户授权
+> grant replication slave on *.* to yaya@"%" identified by "123456";
+
+启用binlog日志
+# vim /etc/my.cnf
+[mysqld]
+server_id=51
+log-bin=db51
+binlog-format="mixed"
+
+查看正在使用的日志信息
+> show master status;
+
+2.2配置从库52
+用户授权
+# mysql -uroot -p
+>  grant replication slave on *.* to user53@"192.168.4.53" identified by "123456";
+启用binlog日志和允许级联复制
+# vim /etc/my.cnf
+[mysqld]
+server_id=52
+log-bin=db52
+binlog-format="mixed"
+log_slave_updates
+
+#systemctl restart mysqld
+查看正在使用的日志信息
+> show master status;
+
+管理员登录指定主库信息
+> change master to master_host="192.168.4.51",master_user="yaya",master_password="123456",master_log_file="db51.000001",master_log_pos=154;
+
+启动slave进程
+> start slave;
+
+查看进程状态信息
+> show slave status\G;
+
+2.3配置从库53
+验证主库的授权用户
+# mysql -h192.168.4.52 -uuser53 -p
+
+指定server_id
+> change master to master_host="192.168.4.52",master_user="user53",master_password="123456",master_log_file="db52.000001",master_log_pos=154;
+
+管理员
+
+6、mysql主从同步复制模式
+6.1 异步复制
+——定义：主库在执行完客户端提交的事务后会立即将结果返给客户端，并不关心从库是否已经接收并处理。
+——查看是否能动态加载模块
+> show variables like "have_dynamic_loading";
+——命令行加载插件
+主库 > install plugin rpl_semi_sync_master soname 'semisync_master.so';
+从库 > install plugin rpl_semi_synv_slave soname 'semisync_slave.so';
+——查看系统库下的表，模块是否安装成功
+> select plugin_name,plugin_status from information_schema.plugins where plugin_name like '%semi%';
+
+6.2 启用半同步复制
+——定义：介于异步复制和全同步复制之间，主库在执行完客户端提交的事务后不是立刻返回给客户端，而是等待至少一个从库接收到并写到relay log中才返回给客户端。
+
+主库 > SET GLOBAL rpl_semi_sync_master_enabled = 1;
+从库 > SET GLOBAL rpl_semi_sync_slave_enabled = 1;
+查看 > show  variables  like  "rpl_semi_sync_%_enabled";
+
+——配置文件永久启用半同步复制
+# vim /etc/my.cnf
+主： plugin-load=rpl_semi_sync_master=semisync_master.so rpl_semi_sync_master_enabled=1 
+
+从： plugin-load=rpl_semi_sync_slave=semisync_slave.so rpl_semi_sync_slave_enabled=1 
 
 
+——主从master和slave需同时启动
+plugin-load = "rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so“
+
+rpl-semi-sync-master-enabled = 1
+rpl-semi-sync-slave-enabled = 1
 
 
+####################################################
 
 
+mysql-day07 知识点
+———— mysql中间件 mysql-proxy maxscale
+
+一、数据读写分离
+1.1数据读写分离
+	把客户端访问数据时的查询请求和写请求分别给不同的数据库服务器处理
+1.2读写分离的意义
+	减轻单台数据库服务器的并发访问压力
+	提高数据库硬件利用率
+1.3时线数据读写分离的方式
+——人肉分离：做不同的数据操作时，访问指定的数据库服务器
+——使用mysql中间件提供的服务实现：mycat、mysql-proxy、maxscale
+1.4使用中间件提供的服务做数据读写分离的缺点
+单点故障
+当访问量大时，有网络瓶颈
+
+二、配置数据读写分离
+2.1拓扑结构
+						write | master51
+client254--------->代理服务器56--------------------->	}
+		  	（maxscale）		 read | slave52
+2.2配置数据读写分离
+2.2.1配置一主一从，主从同步结构，并在客户端测试配置
+2.2.2配置数据读写
+——装包maxscale
+# yum -y install maxscale-2.1.2-1.rhel.7.x86_64.rpm 
+——备份masxcale文件
+# cp /etc/maxscale.cnf /etc/maxscale.cnf.bak
+
+——修改配置文件
+# vim /etc/maxscale.cnf
+  9 [maxscale]	
+ *10 threads=auto	（服务器运行后开启线程的线量,auto自动）
+
+（定义数据库服务器,yy一台服务器）
+ 18 [server1]
+ 19 type=server
+ *20 address=192.168.4.51
+ 21 port=3306
+ 22 protocol=MySQLBackend
+
+ *24 [server2]
+ *25 type=server
+ *26 address=192.168.4.52
+ *27 port=3306
+ *28 protocol=MySQLBackend
+
+（定义监视的数据库服务器）
+ 36 [MySQL Monitor]
+ 37 type=monitor
+ 38 module=mysqlmon		（监视的模块 自带）
+ *39 servers=server1，server2	(监视服务器名称)
+ *40 user=scalemon			（监视数据库服务器时连接的用户名）
+ *41 passwd=123456			（密码）
+ 42 monitor_interval=10000	（指定监视的频率）
+
+#############################################################
+根据配置文件做相应的设置
+> grant replication slave,replication client on *.* to scalemon@"%" identified by "123456";
+#############################################################
+ (不指定只读服务器 注释)
+ *53 #[Read-Only Service]
+ *54 #type=service
+ *55 #router=readconnroute
+ *56 #servers=server1
+ *57 #user=myuser
+ *58 #passwd=mypwd
+ *59 #router_options=slave
+
+ （指定读写分离服务）
+ 64 [Read-Write Service]
+ 65 type=service
+ 66 router=readwritesplit
+ *67 servers=server1，server2    (指定读写分离的服务器)
+ *68 user=maxscale			（验证连接代理服务账户）
+ *69 passwd=123456
+ 70 max_slave_connections=100%
+
+#############################################################
+根据配置文件做相应的设置
+> grant select on mysql.* to maxscale@'%' identified by "123456";
+#############################################################
+
+ (定义管理服务)
+ 76 [MaxAdmin Service]
+ 77 type=service
+ 78 router=cli
+ 
+ (不指定只读服务使用的端口号)
+ *86 #[Read-Only Listener]
+ *87 #type=listener
+ *88 #service=Read-Only Service
+ *89 #protocol=MySQLClient
+ *90 #port=4008
+
+ (定义读写分离服务使用的端口号)
+ 92 [Read-Write Listener]
+ 93 type=listener
+ 94 service=Read-Write Service
+ 95 protocol=MySQLClient
+ 96 port=4006
+
+ （定义管理服务的端口号）
+ 98 [MaxAdmin Listener]
+ 99 type=listener
+100 service=MaxAdmin Service
+101 protocol=maxscaled
+102 socket=default
+*103 port=4018       (设置端口 加)
+
+——根据配置文件做相应的设置(在2台数据库服务器上添加用户)
+监控数据库服务器时，连接数据库服务器的用户
+> grant replication slave,replication client on *.* to scalemon@"%" identified by "123456";
+
+验证访问数据时连接数据服务器使用的用户是否在数据库服务器上存在的连接用户
+> grant select on mysql.* to maxscale@'%' identified by "123456";
+
+——启动服务
+# maxscale -f /etc/maxscale.cnf
+
+——查看服务进程和端口
+# ss -natlp |grep 4018
+# ss -natlp |grep 4006
+
+——测试配置
+在本机访问管理端口查看监控状态
+# maxadmin -P4018 -uadmin -pmariadb
+MaxScale> list servers
+
+——在客户端访问数据读写分离服务
+
+################################################################
+二、mysql多实例
+2.1多实例介绍
+在一台物理主机上运行多个数据库服务
+——节约运维成本
+——提高硬件利用率
+
+2.2配置多实例
+主机：在主机192.168.4.56mysql配置多实例：
+运行两个数据库服务.第一个 数据库服务 /dataone 数据库目录
+					服务端口号；sock文件
+					sock日志文件
+——第二个数据库服务 数据库目录 /datatow
+																																																							
+																																																								
+——环境准备
+——安装提供多实力服务的mysql数据库服务软件
+# tar -xf mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz 
+# mv mysql-5.6.30-linux-glibc2.5-x86_64 /usr/local/mysql
+# echo "export PATH=/usr/local/mysql/bin:$PATH" > /etc/profile
+# source /etc/profile
+
+——编辑配置文件/etc/my.cnf
+# vim /etc/my.cnf
+[mysqld_multi]  						 //启用多实例
+mysqld = /usr/local/mysql/bin/mysqld_safe  	 //指定进程文件的路径
+mysqladmin = /usr/local/mysql/bin/mysqladmin  	//指定管理命令路径
+user = root  						 //指定调用进程的用户
+
+[mysqld1]  					//实例进程名称 ,X表示实例名称,如 [mysql2]
+port=3307  		       		 //端口号
+datadir=/dataone	     		 //数据库目录 ，要手动创建
+socket=/dataone/mysql.sock 		  //指定sock文件的路径和名称
+pid-file=/dataone/mysqld.pid   	//进程pid号文件位置
+log-error=/dataone/mysqld.log  	//错误日志位置
 
 
+[mysqld2]  			
+port=3308	       		
+datadir=/datatwo	     		 
+socket=/datatwo/mysql.sock 		 
+pid-file=/datatwo/mysqld.pid   	
+log-error=/datatwo/mysqld.log  	
 
+——根据配置文件的设置，做相应的配置
+创建数据库目录
+# mkdir /dataone
+# mkdir /datatwo
+# chown mysql:mysql /data*
 
+——初始化授权库
+# mysqld  --user=mysql  --basedir=软件安装目录 --datadir=数据库目录  –initialize  //初始化授权库
+# mysqld --user=mysql --basedir="/usr/local/mysql --datadir="/dataone" --initialize
 
+# mysqld --user=mysql --basedir="/usr/local/mysql --datadir="/datatwo" --initialize
 
+——启动多实力服务
+# mysqld_multi   start   实例编号   //启动实例进程
+# mysqld_multi start 1
 
+——停止多实例服务
+# mysqld_multi --user=root  --password=密码  stop  实例编号    //停止实例进程
+# mysqld_multi --user=root --password="123456" stop 1
 
+——访问多实力服务
+# mysql -uroot –p初始密码 -S sock文件
+# mysql -uroot -p'密码'  -S /dataone/mysqld.sock
+> alter user user() identified by '123456';
 
+################################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+三、mysql调优
 
 
 
